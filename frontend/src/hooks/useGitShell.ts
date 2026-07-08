@@ -4,12 +4,12 @@
  * Designed as a WASM-compatible architecture (state is serialisable).
  */
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type FileEntry = { type: "file"; content: string };
-export type DirEntry = { type: "dir"; children: Record<string, FsNode> };
+export type FileEntry = { type: "file"; content: string; size?: number; created?: number; modified?: number };
+export type DirEntry = { type: "dir"; children: Record<string, FsNode>; created?: number; modified?: number };
 export type FsNode = FileEntry | DirEntry;
 
 export interface GitObjectEntry {
@@ -91,12 +91,13 @@ function listDir(fs: Record<string, FsNode>, cwd: string[]): string[] {
 
 // ─── Initial State ────────────────────────────────────────────────────────────
 
-function makeInitialState(): ShellState {
+export function makeInitialState(): ShellState {
   const home: string[] = ["~"];
+  const now = Date.now();
   return {
     cwd: home,
     fs: {
-      "~": { type: "dir", children: {} },
+      "~": { type: "dir", children: {}, created: now, modified: now },
     },
     git: {
       initialized: false,
@@ -122,7 +123,7 @@ type CommandResult = {
   completed?: boolean;
 };
 
-function runCommand(
+export function runCommand(
   raw: string,
   state: ShellState,
   lineId: { v: number },
@@ -159,9 +160,26 @@ function runCommand(
     }
     const showHidden =
       argv.includes("-la") || argv.includes("-a") || argv.includes("-al");
+    const showLong =
+      argv.includes("-la") || argv.includes("-al") || argv.includes("-l");
     const toShow = showHidden
       ? [...(s.git.initialized ? [".git"] : []), ...entries]
       : entries;
+      
+    if (showLong) {
+      const lines = toShow.map(name => {
+        if (name === ".git") return out(`drwxr-xr-x  -  learner  -  -  .git`);
+        const key = joinPath([...s.cwd, name]);
+        const node = s.fs[key];
+        if (!node) return out(`?---------  ?  ?        ?  ?  ${name}`);
+        const typeStr = node.type === "dir" ? "d" : "-";
+        const size = node.type === "file" ? (node as FileEntry).size || 0 : 0;
+        const date = new Date(node.modified || Date.now());
+        const dateStr = `${date.toLocaleString("default", { month: "short" })} ${date.getDate().toString().padStart(2, " ")} ${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
+        return out(`${typeStr}rw-r--r--  1  learner  learner  ${size.toString().padStart(4, " ")}  ${dateStr}  ${name}`);
+      });
+      return { lines, newState: s };
+    }
     return { lines: [out(toShow.join("  "))], newState: s };
   }
 
@@ -199,7 +217,8 @@ function runCommand(
         lines: [out(`mkdir: ${name}: already exists`, "error")],
         newState: s,
       };
-    const newFs = { ...s.fs, [key]: { type: "dir" as const, children: {} } };
+    const now = Date.now();
+    const newFs = { ...s.fs, [key]: { type: "dir" as const, children: {}, created: now, modified: now } };
     return { lines: [], newState: { ...s, fs: newFs } };
   }
 
@@ -209,7 +228,13 @@ function runCommand(
     if (!name)
       return { lines: [out("Usage: touch <filename>", "error")], newState: s };
     const key = joinPath([...s.cwd, name]);
-    const newFs = { ...s.fs, [key]: { type: "file" as const, content: "" } };
+    const now = Date.now();
+    // If file exists, update modified time
+    if (s.fs[key]) {
+      const newFs = { ...s.fs, [key]: { ...s.fs[key], modified: now } };
+      return { lines: [], newState: { ...s, fs: newFs } };
+    }
+    const newFs = { ...s.fs, [key]: { type: "file" as const, content: "", created: now, modified: now, size: 0 } };
     return { lines: [], newState: { ...s, fs: newFs } };
   }
 
@@ -224,9 +249,11 @@ function runCommand(
         .replace(/^['"]|['"]$/g, "");
       const file = fullCmd.slice(redirIdx + 1).trim();
       const key = joinPath([...s.cwd, file]);
+      const now = Date.now();
+      const content = text + "\n";
       const newFs = {
         ...s.fs,
-        [key]: { type: "file" as const, content: text + "\n" },
+        [key]: { type: "file" as const, content, created: now, modified: now, size: content.length },
       };
       return { lines: [], newState: { ...s, fs: newFs } };
     }
@@ -287,10 +314,13 @@ function runCommand(
     const helpText = [
       "Available commands:",
       "  pwd                     – print working directory",
-      "  ls [-la]               – list directory contents",
+      "  ls [-l] [-a]            – list directory contents",
       "  cd <dir>               – change directory",
       "  mkdir <dir>            – create directory",
       "  touch <file>           – create empty file",
+      "  rm [-r] <path>         – remove file or directory",
+      "  cp [-r] <src> <dest>   – copy file or directory",
+      "  mv <src> <dest>        – move/rename file or directory",
       "  echo 'text' > file     – write text to file",
       "  cat <file>             – view file contents",
       "  nano <file>            – open simplified text editor",
@@ -309,6 +339,139 @@ function runCommand(
       "  git diff               – show unstaged changes",
     ].join("\n");
     return { lines: [out(helpText, "info")], newState: s };
+  }
+
+  // ── rm ──
+  if (cmd === "rm") {
+    const isRecursive = argv.includes("-r") || argv.includes("-rf");
+    const targets = argv.filter((a) => a !== "rm" && !a.startsWith("-"));
+    if (targets.length === 0)
+      return { lines: [out("Usage: rm [-r] <file...>", "error")], newState: s };
+
+    const newFs = { ...s.fs };
+    const lines: TerminalLine[] = [];
+
+    for (const target of targets) {
+      const key = joinPath([...s.cwd, target]);
+      const node = newFs[key];
+      if (!node) {
+        lines.push(out(`rm: ${target}: No such file or directory`, "error"));
+        continue;
+      }
+
+      if (node.type === "dir" && !isRecursive) {
+        lines.push(out(`rm: ${target}: is a directory`, "error"));
+        continue;
+      }
+
+      if (node.type === "dir") {
+        const prefix = key + "/";
+        for (const k of Object.keys(newFs)) {
+          if (k.startsWith(prefix) || k === key) {
+            delete newFs[k];
+          }
+        }
+      } else {
+        delete newFs[key];
+      }
+    }
+    return { lines, newState: { ...s, fs: newFs } };
+  }
+
+  // ── cp ──
+  if (cmd === "cp") {
+    const isRecursive = argv.includes("-r") || argv.includes("-R");
+    const args = argv.filter((a) => a !== "cp" && !a.startsWith("-"));
+    if (args.length !== 2)
+      return { lines: [out("Usage: cp [-r] <source> <destination>", "error")], newState: s };
+
+    const src = args[0];
+    const dest = args[1];
+
+    const srcKey = joinPath([...s.cwd, src]);
+    let destKey = joinPath([...s.cwd, dest]);
+
+    const srcNode = s.fs[srcKey];
+    if (!srcNode)
+      return { lines: [out(`cp: ${src}: No such file or directory`, "error")], newState: s };
+
+    if (srcNode.type === "dir" && !isRecursive) {
+      return { lines: [out(`cp: -r not specified; omitting directory '${src}'`, "error")], newState: s };
+    }
+
+    if (destKey === srcKey || destKey.startsWith(srcKey + "/")) {
+      return { lines: [out(`cp: cannot copy '${src}' to a subdirectory of itself, '${dest}'`, "error")], newState: s };
+    }
+
+    const newFs = { ...s.fs };
+    const now = Date.now();
+
+    if (newFs[destKey] && newFs[destKey].type === "dir") {
+      const srcName = src.split("/").pop() || src;
+      destKey = joinPath([destKey, srcName]);
+    }
+
+    if (srcNode.type === "file") {
+      newFs[destKey] = { ...srcNode, created: now, modified: now };
+    } else {
+      const prefix = srcKey + "/";
+      newFs[destKey] = { ...srcNode, created: now, modified: now };
+      for (const k of Object.keys(s.fs)) {
+        if (k.startsWith(prefix)) {
+          const suffix = k.slice(prefix.length);
+          const newDestKey = joinPath([destKey, suffix]);
+          newFs[newDestKey] = { ...s.fs[k], created: now, modified: now } as FsNode;
+        }
+      }
+    }
+    return { lines: [], newState: { ...s, fs: newFs } };
+  }
+
+  // ── mv ──
+  if (cmd === "mv") {
+    const args = argv.filter((a) => a !== "mv" && !a.startsWith("-"));
+    if (args.length !== 2)
+      return { lines: [out("Usage: mv <source> <destination>", "error")], newState: s };
+
+    const src = args[0];
+    const dest = args[1];
+
+    const srcKey = joinPath([...s.cwd, src]);
+    let destKey = joinPath([...s.cwd, dest]);
+
+    const srcNode = s.fs[srcKey];
+    if (!srcNode)
+      return { lines: [out(`mv: ${src}: No such file or directory`, "error")], newState: s };
+
+    if (destKey === srcKey || destKey.startsWith(srcKey + "/")) {
+      return { lines: [out(`mv: cannot move '${src}' to a subdirectory of itself, '${dest}'`, "error")], newState: s };
+    }
+
+    const newFs = { ...s.fs };
+    const now = Date.now();
+
+    if (newFs[destKey] && newFs[destKey].type === "dir") {
+      const srcName = src.split("/").pop() || src;
+      destKey = joinPath([destKey, srcName]);
+    }
+
+    if (srcNode.type === "file") {
+      newFs[destKey] = { ...srcNode, modified: now };
+      delete newFs[srcKey];
+    } else {
+      const prefix = srcKey + "/";
+      newFs[destKey] = { ...srcNode, modified: now };
+      delete newFs[srcKey];
+      for (const k of Object.keys(s.fs)) {
+        if (k.startsWith(prefix)) {
+          const suffix = k.slice(prefix.length);
+          const newDestKey = joinPath([destKey, suffix]);
+          newFs[newDestKey] = { ...s.fs[k] } as FsNode;
+          delete newFs[k];
+        }
+      }
+    }
+    return { lines: [], newState: { ...s, fs: newFs } };
   }
 
   // ── git ──
@@ -851,7 +1014,25 @@ export interface UseGitShellOptions {
 }
 
 export function useGitShell(options: UseGitShellOptions = {}) {
-  const [shellState, setShellState] = useState<ShellState>(makeInitialState);
+  const [shellState, setShellState] = useState<ShellState>(() => {
+    try {
+      const saved = localStorage.getItem("sandbox_vfs_state");
+      if (saved) {
+        return JSON.parse(saved) as ShellState;
+      }
+    } catch (e) {
+      console.error("Failed to parse sandbox_vfs_state:", e);
+    }
+    return makeInitialState();
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("sandbox_vfs_state", JSON.stringify(shellState));
+    } catch (e) {
+      console.error("Failed to save sandbox_vfs_state:", e);
+    }
+  }, [shellState]);
   const [lines, setLines] = useState<TerminalLine[]>([
     {
       id: 0,
@@ -941,9 +1122,10 @@ export function useGitShell(options: UseGitShellOptions = {}) {
     setShellState((prev) => {
       if (!prev.editorState) return prev;
       const fileKey = prev.editorState.file;
+      const now = Date.now();
       const newFs = {
         ...prev.fs,
-        [fileKey]: { type: "file" as const, content },
+        [fileKey]: { type: "file" as const, content, modified: now, size: content.length, created: prev.fs[fileKey]?.created || now },
       };
       return { ...prev, fs: newFs, editorState: null };
     });

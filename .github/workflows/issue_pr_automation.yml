@@ -46,20 +46,21 @@ jobs:
 
             // Check for explicit difficulty declarations first
             let difficulty = null;
-            const difficultyMatch = body.match(/difficulty\s*:\s*(easy|medium|hard)/i) || title.match(/difficulty\s*:\s*(easy|medium|hard)/i);
+            const explicitRegex = /(?:difficulty|level|label)\s*(?:level)?\s*(?::|is)\s*(easy|medium|hard)/i;
+            const difficultyMatch = body.match(explicitRegex) || title.match(explicitRegex);
             if (difficultyMatch) {
               difficulty = difficultyMatch[1].toLowerCase();
             } else {
-              // Fallback to keyword matching (prioritizing hard > medium > easy to avoid false positives)
-              const difficultyMap = [
-                {keyword:['hard','difficult','complex','high'], label:'hard', color:'f77f7f'},
-                {keyword:['medium','moderate','intermediate'], label:'medium', color:'f0b37e'},
-                {keyword:['easy','low','simple'], label:'easy', color:'84b6eb'}
+              // Fallback to keyword matching ONLY on the title using word boundaries to avoid false positives in the body text
+              const difficultyPatterns = [
+                {regex: /\b(hard|difficult|complex|high)\b/i, label: 'hard'},
+                {regex: /\b(medium|moderate|intermediate)\b/i, label: 'medium'},
+                {regex: /\b(easy|low|simple)\b/i, label: 'easy'}
               ];
 
-              for (const entry of difficultyMap) {
-                if (entry.keyword.some(k => title.includes(k) || body.includes(k))) {
-                  difficulty = entry.label;
+              for (const pattern of difficultyPatterns) {
+                if (pattern.regex.test(title)) {
+                  difficulty = pattern.label;
                   break;
                 }
               }

@@ -1,9 +1,20 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Play, RefreshCcw, Users, History, Bookmark, Palette } from "lucide-react";
+import {
+  Play,
+  RefreshCcw,
+  Users,
+  History,
+  Bookmark,
+  Palette,
+} from "lucide-react";
 import Editor, { Monaco } from "@monaco-editor/react";
 import { useWebSocket } from "../../hooks/useWebSocket";
 import { CodeTimeline } from "./CodeTimeline";
-import { fetchSandboxSnapshots, saveSandboxSnapshot, CodeSnapshot } from "../../lib/api";
+import {
+  fetchSandboxSnapshots,
+  saveSandboxSnapshot,
+  CodeSnapshot,
+} from "../../lib/api";
 import { useTheme } from "../../context/ThemeContext";
 import toast from "react-hot-toast";
 
@@ -18,7 +29,9 @@ export function CodeSandbox() {
 
   const [snapshots, setSnapshots] = useState<CodeSnapshot[]>([]);
   const [isTimelineOpen, setIsTimelineOpen] = useState(false);
-  const [selectedSnapshotId, setSelectedSnapshotId] = useState<number | null>(null);
+  const [selectedSnapshotId, setSelectedSnapshotId] = useState<number | null>(
+    null,
+  );
 
   // Load theme preference from localStorage, default to standard dark variant
   const [theme, setTheme] = useState<string>(() => {
@@ -31,15 +44,20 @@ export function CodeSandbox() {
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (!iframeRef.current || event.source !== iframeRef.current.contentWindow) {
+      if (
+        !iframeRef.current ||
+        event.source !== iframeRef.current.contentWindow
+      ) {
         return;
       }
 
-      const data = event.data as { type?: string; message?: string } | undefined;
+      const data = event.data as
+        | { type?: string; message?: string }
+        | undefined;
       if (data?.type === "log" || data?.type === "error") {
         const prefix = data.type === "error" ? "⚠ " : "";
         setOutput((prev) => [...prev, `${prefix}${data.message ?? ""}`]);
-        
+
         // Trigger responsive audio feedbacks instantly based on logging streams
         if (data.type === "error") {
           playAudioCue("error");
@@ -51,7 +69,7 @@ export function CodeSandbox() {
     return () => window.removeEventListener("message", handleMessage);
   }, [playAudioCue]);
 
-  const wsUrl = import.meta.env.VITE_API_URL
+  const wsUrl = import.meta.env?.VITE_API_URL
     ? import.meta.env.VITE_API_URL.replace("http", "ws") + "ws/sandbox/"
     : "ws://127.0.0.1:8000/ws/sandbox/";
 
@@ -192,18 +210,18 @@ export function CodeSandbox() {
           </body>
         </html>
       `;
-      
+
       // Temporary interception to capture inline script compilation states smoothly
       const executionCheck = (e: MessageEvent) => {
-        if (e.data?.type === 'execution-success') {
+        if (e.data?.type === "execution-success") {
           playAudioCue("success");
-          window.removeEventListener('message', executionCheck);
-        } else if (e.data?.type === 'error') {
-          window.removeEventListener('message', executionCheck);
+          window.removeEventListener("message", executionCheck);
+        } else if (e.data?.type === "error") {
+          window.removeEventListener("message", executionCheck);
         }
       };
-      window.addEventListener('message', executionCheck);
-      
+      window.addEventListener("message", executionCheck);
+
       iframeRef.current.srcdoc = srcDoc;
     }
 
@@ -258,7 +276,7 @@ export function CodeSandbox() {
               </span>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
             {/* Neobrutalist Theme Dropdown Selector */}
             <div className="flex items-center gap-1.5 border-2 border-black rounded-lg px-2 py-1 bg-[#ffb5e8] dark:bg-[#151411] dark:border-[#2e2924] shadow-card-sm text-black dark:text-[#f0ebe2]">
@@ -306,7 +324,7 @@ export function CodeSandbox() {
             </button>
           </div>
         </div>
-        
+
         <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
           <div className="flex-1 border-b-4 lg:border-b-0 lg:border-r-4 border-black dark:border-[#2e2924] relative">
             <Editor
@@ -343,9 +361,9 @@ export function CodeSandbox() {
           title="sandbox-execution"
           sandbox="allow-scripts"
           className="hidden"
-          />
+        />
       </div>
-      
+
       {isTimelineOpen && (
         <div className="rounded-2xl overflow-hidden shadow-card">
           <CodeTimeline

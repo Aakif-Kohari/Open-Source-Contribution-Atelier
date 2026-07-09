@@ -6,18 +6,22 @@ const getSafeEnvVar = (key: string): string => {
   if (typeof process !== "undefined" && process.env && process.env[key]) {
     return process.env[key] as string;
   }
-  if (typeof import.meta !== "undefined" && import.meta.env && import.meta.env[key]) {
-    return import.meta.env[key] as string;
-  }
+  try {
+    if (typeof import.meta !== "undefined" && import.meta.env?.[key]) {
+      return import.meta.env[key] as string;
+    }
+  } catch (e) {}
   return "";
 };
 
 // 2. Safely resolve the base URL
 const API_BASE =
   getSafeEnvVar("VITE_API_BASE_URL").trim() ||
-  (typeof window !== "undefined" ? `${window.location.origin}/api` : "http://127.0.0.1:8000/api");
+  (typeof window !== "undefined"
+    ? `${window.location.origin}/api`
+    : "http://127.0.0.1:8000/api");
 
-  type RequestOptions = RequestInit & {
+type RequestOptions = RequestInit & {
   requireAuth?: boolean;
   suppressErrorToast?: boolean;
   /** Request timeout in milliseconds. Default: 15000 (15s) */
@@ -118,7 +122,9 @@ export async function fetchApi(endpoint: string, options: RequestOptions = {}) {
               toast.error("You do not have permission to perform this action.");
               break;
             case 429:
-              toast.error(errorMessage || "Too many requests. Please slow down!");
+              toast.error(
+                errorMessage || "Too many requests. Please slow down!",
+              );
               break;
             case 500:
               toast.error("Server error. Our team has been notified.");
@@ -260,7 +266,6 @@ export async function saveSandboxSnapshot(
     body: JSON.stringify({ code, label, is_auto }),
   });
 }
-
 
 export interface ProjectFile {
   id: string;
@@ -536,12 +541,15 @@ export async function executeTerminalCommand(
 
 export async function exportWorkspaceZip(projectId: string): Promise<void> {
   const token = localStorage.getItem("accessToken");
-  const response = await fetch(`${API_BASE}/sandbox/projects/${projectId}/export_zip/`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
+  const response = await fetch(
+    `${API_BASE}/sandbox/projects/${projectId}/export_zip/`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     },
-  });
+  );
 
   if (!response.ok) {
     throw new Error("Failed to export workspace");

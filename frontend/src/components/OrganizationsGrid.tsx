@@ -3,7 +3,10 @@ import { OptimizedImage } from "./ui/OptimizedImage";
 import SkeletonCard from "./ui/skeletons/SkeletonCard";
 
 const API_BASE =
-  import.meta.env.VITE_API_BASE_URL?.trim() || `${window.location.origin}/api`;
+  import.meta.env?.VITE_API_BASE_URL?.trim() ||
+  (typeof window !== "undefined"
+    ? `${window.location.origin}/api`
+    : "http://localhost:8000/api");
 
 type Organization = {
   slug: string;
@@ -45,9 +48,7 @@ const OrganizationsGrid: React.FC = () => {
       })
       .then((data) => {
         setOrganizations(
-          Array.isArray(data) && data.length > 0
-            ? data
-            : DEFAULT_ORGANIZATIONS,
+          Array.isArray(data) && data.length > 0 ? data : DEFAULT_ORGANIZATIONS,
         );
         setLoading(false);
       })

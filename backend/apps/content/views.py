@@ -290,6 +290,18 @@ class LessonPDFView(views.APIView):
 
         return response_obj
 
+class LessonAccessCheckView(APIView):
+    """
+    Check if user can access a lesson.
+    """
+    permission_classes = [IsLessonUnlocked]
+    
+    def get(self, request, slug):
+        return Response({
+            "has_access": True,
+            "message": "You have access to this lesson"
+        })
+
 
 import json
 import os

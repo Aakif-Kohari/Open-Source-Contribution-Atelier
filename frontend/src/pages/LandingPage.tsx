@@ -5,8 +5,17 @@ import { fetchApi } from "../lib/api";
 import { useAuth } from "../features/auth/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import OrganizationsGrid from "../components/OrganizationsGrid";
-import { useTranslation } from "react-i18next";
-import SkeletonContributorDashboard from "../components/ui/skeletons/SkeletonContributorDashboard";
+
+declare const require: any;
+
+// react-i18next may be optional in some environments. Import with a safe runtime fallback.
+let useTranslation: any;
+try {
+  useTranslation = require("react-i18next").useTranslation;
+} catch {
+  // Fallback: provide a minimal hook that returns identity translator
+  useTranslation = () => ({ t: (s: string) => s });
+}
 
 // Safely look up variables across Next.js compilation bundles and Vite browser environments
 const getEnvVar = (key: string): string => {

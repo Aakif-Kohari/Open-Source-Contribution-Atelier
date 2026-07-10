@@ -139,7 +139,10 @@ export async function fetchLessonsApi(): Promise<Lesson[]> {
       } satisfies Lesson;
     });
   } catch (err) {
-    console.error("[fetchLessonsApi] API request failed, using built-in fallback lessons:", err);
+    console.error(
+      "[fetchLessonsApi] API request failed, using built-in fallback lessons:",
+      err,
+    );
     return lessons;
   }
 }

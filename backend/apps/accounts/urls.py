@@ -1,7 +1,7 @@
 from django.urls import path
 
 from .views import (
-    AvatarUploadView
+    AvatarUploadView,
     ExportDataView,
     GitHubOAuthCallbackView,
     GitHubOAuthStartView,
@@ -20,6 +20,8 @@ from .views import (
     SignupView,
     UserListView,
     UserStatisticsView,
+    UserSuggestionsView,
+    PublicProfileView,
 )
 
 urlpatterns = [
@@ -32,7 +34,8 @@ urlpatterns = [
     path("me/export/", ExportDataView.as_view(), name="me-export"),
     path("stats/", UserStatisticsView.as_view(), name="user-stats"),
     path("users/", UserListView.as_view(), name="user-list"),
-    path("profile/avatar/", AvatarUploadView.as_view(), name="avatar-upload")
+    path("users/suggestions/", UserSuggestionsView.as_view(), name="user-suggestions"),
+    path("profile/avatar/", AvatarUploadView.as_view(), name="avatar-upload"),
     path("logout/", LogoutView.as_view(), name="logout"),
     # ── OAuth ──────────────────────────────────────────────────────────────────
     path("google/", GoogleLoginView.as_view(), name="google-login"),
@@ -57,4 +60,5 @@ urlpatterns = [
         "magic-link/request/", MagicLinkRequestView.as_view(), name="magic-link-request"
     ),
     path("magic-link/verify/", MagicLinkVerifyView.as_view(), name="magic-link-verify"),
+    path("profile/<str:username>/", PublicProfileView.as_view(), name="public-profile"),
 ]

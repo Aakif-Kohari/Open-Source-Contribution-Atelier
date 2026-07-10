@@ -1,9 +1,12 @@
 from django.contrib import admin
-from django.urls import path, include, re_path
+from django.urls import include, path, re_path
 from django.views.decorators.csrf import csrf_exempt
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
 from graphene_django.views import GraphQLView
-from django.urls import path, include
 
 from apps.dashboard.views import LeaderboardView
 
@@ -19,7 +22,6 @@ urlpatterns = [
     path("accounts/", include("allauth.urls")),
     path("api/auth/", include("apps.accounts.urls")),
     path("api/users/", include("apps.accounts.user_urls")),
-    path("", include("django_prometheus.urls")),
     path("api/content/", include("apps.content.urls")),
     path("api/progress/", include("apps.progress.urls")),
     path("api/challenges/", include("apps.challenges.urls")),
@@ -31,10 +33,11 @@ urlpatterns = [
     path("api/notes/", include("apps.notes.urls")),
     path("api/chat/", include("apps.chat.urls")),
     path("api/recommendations/", include("apps.recommendations.urls")),
+    path("api/moderation/", include("apps.moderation.urls")),
+    path("api/portfolio/", include("apps.portfolio.urls")),
     # ============================================================
     # WEBHOOKS & UPLOADS
     # ============================================================
-    path("api/webhooks/", include("apps.webhooks.urls")),
     path("api/uploads/", include("apps.uploads.urls")),
     # ============================================================
     # RBAC (Role-Based Access Control)
@@ -55,19 +58,18 @@ urlpatterns = [
     # ============================================================
     # API DOCUMENTATION
     # ============================================================
-    path("api/rbac/", include("apps.rbac.urls")),
-    path("api/uploads/", include("apps.uploads.urls")),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
         "api/docs/",
-        SpectacularSwaggerView.as_view(url_name="schema"),
+        SpectacularSwaggerView.as_view(url_name="schema"),  # Fixed here
         name="swagger-ui",
     ),
-    # ============================================================
-    # PROMETHEUS METRICS
-    # ============================================================
+    path(
+        "api/redoc/",
+        SpectacularRedocView.as_view(url_name="schema"),
+        name="redoc-ui",
+    ),
     path("api/graphql/", csrf_exempt(GraphQLView.as_view(graphiql=True))),
-    path("", include("django_prometheus.urls")),
 ]
 
 from django.conf import settings
@@ -78,12 +80,17 @@ if settings.DEBUG:
 
     urlpatterns += [
         path("api/organizations/", include("apps.organizations.urls")),
-        path("api/feature-flags/", include("apps.feature_flags.urls")),
+        path("api/feature-flags/", feature_flags_debug_view, name="feature-flags-debug"),
         path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
         path(
             "api/docs/",
-            SpectacularSwaggerView.as_view(url_name="schema"),
+            SpectacularSwaggerView.as_view(url_name="schema"),  # Fixed here as well
             name="swagger-ui",
+        ),
+        path(
+            "api/redoc/",
+            SpectacularRedocView.as_view(url_name="schema"),
+            name="redoc-ui",
         ),
         path("graphql/", csrf_exempt(GraphQLView.as_view(graphiql=True))),
     ]

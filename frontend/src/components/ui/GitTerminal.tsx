@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { RotateCcw, Terminal, ChevronRight } from "lucide-react";
+import { RotateCcw, Terminal, ChevronRight, BookOpen } from "lucide-react";
 import { useGitShell } from "../../hooks/useGitShell";
 import type { TerminalLine } from "../../hooks/useGitShell";
 import { useTerminalAutocomplete } from "../../hooks/useTerminalAutocomplete";
 import { useFailureAnimation } from "../../hooks/useFailureAnimation";
 import { Textarea } from "./Textarea";
+import { GitCheatSheet } from "./GitCheatSheet";
 
 interface GitTerminalProps {
   /** Called when a lesson-objective command succeeds */
@@ -58,6 +59,7 @@ export function GitTerminal({
   const [inputVal, setInputVal] = useState("");
   const [editorVal, setEditorVal] = useState("");
   const [completed, setCompleted] = useState(false);
+  const [showCheatSheet, setShowCheatSheet] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -127,6 +129,23 @@ export function GitTerminal({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Ctrl+L clears the terminal (override browser "clear URL bar" behavior)
+    if (e.ctrlKey && e.key.toLowerCase() === "l") {
+      e.preventDefault();
+      resetShell();
+      setCompleted(false);
+      setInputVal("");
+      setShowSuggestions(false);
+      return;
+    }
+
+    // Ctrl+/ focuses the input (defensive; input already has focus)
+    if (e.ctrlKey && e.key === "/") {
+      e.preventDefault();
+      inputRef.current?.focus();
+      return;
+    }
+
     if (showSuggestions && suggestions.length > 0) {
       if (e.key === "ArrowUp") {
         e.preventDefault();
@@ -182,6 +201,13 @@ export function GitTerminal({
     <div
       ref={termRef}
       className="flex flex-col bg-[#0f0f1d] rounded-lg shadow-card-lg border-2 border-black"
+      onKeyDownCapture={(e) => {
+        // Ctrl+/ focuses the terminal input even when focus is on other elements
+        if (e.ctrlKey && e.key === "/" && !shellState.editorState) {
+          e.preventDefault();
+          inputRef.current?.focus();
+        }
+      }}
     >
       {/* ── Title bar ─────────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-4 py-2 bg-[#1a1a2e] border-b-4 border-black dark:border-[#2e2924]">
@@ -199,6 +225,14 @@ export function GitTerminal({
           <span className="text-xs font-black text-yellow-300 bg-black/40 px-2 py-0.5 rounded-full">
             {xp} XP
           </span>
+          <button
+            onClick={() => setShowCheatSheet(true)}
+            title="Git Cheat Sheet"
+            className="text-gray-400 hover:text-white transition-colors p-1 rounded flex items-center gap-1 text-xs"
+          >
+            <BookOpen size={13} />
+            <span className="hidden sm:inline">Cheat Sheet</span>
+          </button>
           <button
             onClick={handleReset}
             title="Reset terminal"
@@ -334,8 +368,8 @@ export function GitTerminal({
           <input
             ref={inputRef}
             id="git-terminal-input"
-            aria-label="Enter git command"
-            className="flex-1 bg-transparent font-mono text-sm text-white outline-none placeholder:text-gray-600 caret-emerald-400"
+            aria-label="Git terminal input"
+            className="flex-1 bg-transparent font-mono text-sm text-white outline-none placeholder:text-gray-600 caret-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f1d] focus-visible:outline-none"
             placeholder={
               completed
                 ? "✅ Objective done – try more commands freely!"
@@ -369,6 +403,13 @@ export function GitTerminal({
           </button>
         </form>
       )}
+
+      {/* ── Git Cheat Sheet Modal ─────────────────────────────────── */}
+      <GitCheatSheet
+        isOpen={showCheatSheet}
+        onClose={() => setShowCheatSheet(false)}
+        onInsertCommand={(command) => setInputVal(command)}
+      />
     </div>
   );
 }

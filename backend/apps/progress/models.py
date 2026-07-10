@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.utils import timezone
+from django.core.validators import MinValueValidator, MaxValueValidator
+
 
 from apps.content.models import Exercise, Lesson
 from apps.organizations.models import Organization
@@ -121,9 +123,16 @@ class LessonProgressSync(models.Model):
     completed = models.BooleanField(default=False)
     base_score = models.PositiveIntegerField(default=0)
     multiplier_applied = models.FloatField(default=1.0)
-    score = models.PositiveIntegerField(default=0)
+    score = models.PositiveIntegerField(
+        default=0,
+        validators=[
+            MinValueValidator(0),
+            MaxValueValidator(1000),
+        ],
+    )
 
     client_timestamp_ms = models.BigIntegerField(null=True, blank=True)
+
 
     # When the server applied this sync item
     server_updated_at = models.DateTimeField(null=True, blank=True)
@@ -367,6 +376,7 @@ class PeerReview(models.Model):
     feedback = models.TextField()
     rating = models.PositiveIntegerField(default=5)
     is_approved = models.BooleanField(default=True)
+    is_hidden = models.BooleanField(default=False)
     points_earned = models.PositiveIntegerField(default=10)
     created_at = models.DateTimeField(auto_now_add=True)
 

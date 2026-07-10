@@ -7,8 +7,8 @@ import { GitBranch } from "lucide-react";
 import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
 
 const githubAuthUrl =
-  import.meta.env.VITE_GITHUB_OAUTH_URL ||
-  `${import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api"}/auth/github/`;
+  import.meta.env?.VITE_GITHUB_OAUTH_URL ||
+  `${import.meta.env?.VITE_API_BASE_URL || "http://localhost:8000/api"}/auth/github/`;
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;
@@ -208,3 +208,5 @@ export function SignupPage() {
     </AuthPageShell>
   );
 }
+
+export default SignupPage;

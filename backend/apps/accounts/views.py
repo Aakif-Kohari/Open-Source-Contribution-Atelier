@@ -14,9 +14,14 @@ from django.utils import timezone
 from django.utils.text import slugify
 from django_filters.rest_framework import DjangoFilterBackend
 from django_q.tasks import async_task
-from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+    extend_schema_view,
+)
 from rest_framework import filters, generics, permissions, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -40,6 +45,12 @@ from .serializers import (
     SignupSerializer,
     UserListSerializer,
     UserUpdateSerializer,
+)
+from schemas.user import (
+    UserCreateSchema,
+    UserLoginSchema,
+    UserResponseSchema,
+    UserProfileSchema,
 )
 from .tasks import (
     send_magic_link_email_task,
@@ -93,50 +104,33 @@ class SignupView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
     throttle_classes = [SignupThrottle]
 
-@extend_schema(
-    summary="Register a new user",
-    description="Create a new user account with username, email, and password",
-    request=UserCreateSchema,
-    responses={
-        201: OpenApiResponse(description="User created successfully"),
-        400: OpenApiResponse(description="Validation error"),
-    },
-    examples=[
-        OpenApiExample(
-            name="Valid Registration",
-            value={
-                "username": "johndoe",
-                "email": "john@example.com",
-                "password": "SecurePass123"
-            }
-        )
-    ]
-)
-def register(request):
-    # ... view logic
 
 @extend_schema(
     summary="Login user",
     description="Authenticate user and return JWT token",
     request=UserLoginSchema,
     responses={
-        200: OpenApiResponse(description="Login successful", response=LoginResponseSchema),
+        200: OpenApiResponse(
+            description="Login successful", response=UserResponseSchema
+        ),
         401: OpenApiResponse(description="Invalid credentials"),
-    }
+    },
 )
 def login(request):
-    # ... view logic
+    pass
+
 
 @extend_schema(
     summary="Get user profile",
     description="Returns current user profile information",
     responses={
-        200: UserProfileSchema,
+        200: UserResponseSchema,
         401: OpenApiResponse(description="Unauthorized"),
-    }
+    },
 )
 def get_profile(request):
-    # ... view logic
+    pass
+
 
 class MeView(APIView):
     permission_classes = [IsAuthenticated]  # check jwt authentication
@@ -153,9 +147,9 @@ class MeView(APIView):
         )
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
-        instance.refresh_from_db()
+        instance.refresh_from_db()  # type: ignore
         if hasattr(instance, "profile"):
-            instance.profile.refresh_from_db()
+            instance.profile.refresh_from_db()  # type: ignore
         response_serializer = UserListSerializer(instance, context={"request": request})
         return Response(response_serializer.data)
 

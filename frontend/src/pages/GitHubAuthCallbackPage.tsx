@@ -30,3 +30,5 @@ export function GitHubAuthCallbackPage() {
     </div>
   );
 }
+
+export default GitHubAuthCallbackPage;

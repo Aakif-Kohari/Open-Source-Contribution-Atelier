@@ -1,3 +1,5 @@
+
+
 import uuid
 
 from django.conf import settings
@@ -125,13 +127,22 @@ def get_timezone_choices():
 
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    """
+    Standard user profile linking to the main User model.
+    Stores the user's avatar image.
+    """
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="user_profile",  # Changed from "profile" to "user_profile"
+    )
     avatar = models.ImageField(
-        upload_to='avatars/',
+        upload_to="avatars/",
         null=True,
         blank=True,
-        max_length=255
-    )    avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
+        max_length=255,
+    )
     cover_image = models.ImageField(upload_to="covers/", null=True, blank=True)
     last_password_change = models.DateTimeField(auto_now_add=True)
     timezone = models.CharField(

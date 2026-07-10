@@ -8,6 +8,8 @@ from .serializers import CodeSnapshotSerializer
 from .services import verify_git_command
 
 
+from rest_framework.throttling import ScopedRateThrottle
+
 class SandboxVerifySerializer(serializers.Serializer):
     command = serializers.CharField()
     expected_command = serializers.CharField()
@@ -15,6 +17,8 @@ class SandboxVerifySerializer(serializers.Serializer):
 
 class SandboxVerifyView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "sandbox_user"
 
     def post(self, request):
         serializer = SandboxVerifySerializer(data=request.data)
@@ -129,6 +133,55 @@ class ProjectViewSet(viewsets.ModelViewSet):
             operation.delete()
 
         return Response({"restored_count": len(files_to_update)})
+
+    @action(detail=True, methods=["get"])
+    def export_zip(self, request, pk=None):
+        """Export project workspace as a ZIP file."""
+        import io
+        import zipfile
+        from django.http import HttpResponse
+
+        project = self.get_object()
+        files = ProjectFile.objects.filter(project=project)
+
+        import os
+
+        # Create ZIP in memory
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            for file in files:
+                # Sanitize path to prevent Zip Slip (Directory Traversal)
+                raw_path = (file.path or "").replace("\\", "/").lstrip("/")
+                clean_path = os.path.normpath(raw_path).replace("\\", "/")
+                if (
+                    clean_path in ("", ".", "..")
+                    or clean_path.startswith("../")
+                    or ":" in clean_path.split("/", 1)[0]
+                ):
+                    continue  # Skip paths that could escape the archive root
+                zip_file.writestr(clean_path, file.content)
+
+            # Add a README file
+            readme_content = f"""# {project.name}
+
+This workspace was exported from Open Source Contribution Atelier.
+
+Project: {project.name}
+Exported at: {project.updated_at}
+Total files: {files.count()}
+
+## Files
+"""
+            for file in files:
+                readme_content += f"- {file.path}\n"
+            zip_file.writestr("README.md", readme_content)
+
+        # Prepare response
+        buffer.seek(0)
+        filename = f"{project.name.replace(' ', '_')}-export.zip"
+        response = HttpResponse(buffer.getvalue(), content_type="application/zip")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
 
 
 class ProjectFileViewSet(viewsets.ModelViewSet):

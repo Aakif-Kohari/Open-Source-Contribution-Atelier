@@ -17,6 +17,7 @@ type User = {
   twitter_url?: string;
   linkedin_url?: string;
   github_url?: string;
+  receive_weekly_digest?: boolean;
 };
 
 type AuthContextType = {

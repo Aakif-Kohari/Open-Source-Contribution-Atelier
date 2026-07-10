@@ -750,12 +750,13 @@ export function LessonPage() {
                           ) {
                             bgColor = "bg-red-600 border-red-800 text-white";
                           }
+                        }
 
-                          if (!bgColor) {
-                            bgColor = isSelected
-                              ? "bg-accent shadow-card-sm -translate-y-0.5"
-                              : "bg-surface hover:bg-surface-low dark:bg-[#151411]";
-                          }
+                        if (!bgColor) {
+                          bgColor = isSelected
+                            ? "bg-accent shadow-card-sm -translate-y-0.5"
+                            : "bg-surface hover:bg-surface-low dark:bg-[#151411]";
+                        }
 
                           return (
                             <button

@@ -157,9 +157,9 @@ export function LandingPage() {
           </div>
 
           <h2 className="text-3xl font-black mb-6 text-center text-text dark:text-[#f0ebe2]">
-            {authRole === "student"
-              ? t("landing.enter_sandbox")
-              : t("landing.maintainer_login")}
+             {authRole === "student"
+                ? "Start Your First Contribution"
+                : t("landing.maintainer_login")}
           </h2>
 
           {error && (

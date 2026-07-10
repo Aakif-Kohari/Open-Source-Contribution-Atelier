@@ -17,6 +17,10 @@ from rest_framework import (
     viewsets,
 )
 from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .permissions import IsLessonUnlocked
 
 from apps.challenges.models import Challenge
 from apps.challenges.serializers import ChallengeSerializer

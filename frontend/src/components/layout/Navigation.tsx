@@ -16,6 +16,7 @@ import {
   Moon,
   Settings,
   Eye,
+  FileText,
 } from "lucide-react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useTheme } from "../../hooks/useTheme";
@@ -30,6 +31,7 @@ const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutGrid },
   { to: "/lessons/what-is-open-source", label: "Lessons", icon: BookOpen },
   { to: "/challenges", label: "Challenges", icon: Trophy },
+  { to: "/portfolio", label: "Portfolio", icon: FileText },
   { to: "/leaderboard", label: "Leaderboard", icon: TrendingUp },
   { to: "/contributor-sandbox", label: "Playground", icon: TerminalSquare },
   { to: "/community", label: "Community", icon: BriefcaseBusiness },

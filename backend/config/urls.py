@@ -34,6 +34,7 @@ urlpatterns = [
     path("api/chat/", include("apps.chat.urls")),
     path("api/recommendations/", include("apps.recommendations.urls")),
     path("api/moderation/", include("apps.moderation.urls")),
+    path("api/portfolio/", include("apps.portfolio.urls")),
     # ============================================================
     # WEBHOOKS & UPLOADS
     # ============================================================
@@ -83,4 +84,3 @@ if settings.DEBUG:
         ),
         path("graphql/", csrf_exempt(GraphQLView.as_view(graphiql=True))),
     ]
-    

@@ -30,6 +30,7 @@ import TemplateMarketplacePage from "../pages/TemplateMarketplacePage";
 import { GitTerminal } from "../components/ui/GitTerminal";
 import { TerminalReplay } from "../components/ui/TerminalReplay";
 import { A11yLinterSandbox } from "../components/ui/A11yLinterSandbox";
+import PortfolioPage from "../pages/PortfolioPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -258,6 +259,14 @@ export function AppRouter() {
           element={
             <ProtectedRoute>
               <ProfileSettingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/portfolio"
+          element={
+            <ProtectedRoute>
+              <PortfolioPage />
             </ProtectedRoute>
           }
         />

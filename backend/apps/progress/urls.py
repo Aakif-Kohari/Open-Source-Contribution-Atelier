@@ -21,16 +21,18 @@ from .views import (
     UserProgressPDFExportView,
     ReadingProgressView,
     QuizNonceView,  # NEW: Imported the Nonce View
+    LeaderboardView,
 )
 
 urlpatterns = [
+    path("leaderboard/", LeaderboardView.as_view(), name="leaderboard"),
     path("export/pdf/", UserProgressPDFExportView.as_view(), name="export-pdf"),
     path("badges/", BadgeListView.as_view(), name="badges"),
     path("me/", MyProgressView.as_view(), name="my-progress"),
     path("bulk-sync/", BulkSyncProgressView.as_view(), name="bulk-sync"),
     path("bulk-update/", BulkProgressUpdateView.as_view(), name="bulk-update"),
     path("recommendations/", RecommendationsView.as_view(), name="recommendations"),
-    path('daily-stats/', DailyLessonStatsView.as_view(), name='daily-stats'),
+    path("daily-stats/", DailyLessonStatsView.as_view(), name="daily-stats"),
     path("feed/", CommunityFeedView.as_view(), name="community-feed"),
     path("community-stats/", CommunityStatsView.as_view(), name="community-stats"),
     path("help-requests/", HelpRequestListCreateView.as_view(), name="help-requests"),

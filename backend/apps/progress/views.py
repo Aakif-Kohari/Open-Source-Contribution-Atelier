@@ -749,6 +749,7 @@ from .serializers import CodeSubmissionSerializer, PeerReviewSerializer
 
 from rest_framework.throttling import ScopedRateThrottle
 
+
 class CodeSubmissionView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     throttle_classes = [ScopedRateThrottle]
@@ -928,10 +929,11 @@ class DailyLessonStatsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        progress_records = LessonProgress.objects.filter(
-            user=request.user,
-            completed=True
-        ).select_related('lesson').order_by('updated_at')
+        progress_records = (
+            LessonProgress.objects.filter(user=request.user, completed=True)
+            .select_related("lesson")
+            .order_by("updated_at")
+        )
 
         # Group by date locally in Python
         stats = {}
@@ -939,13 +941,58 @@ class DailyLessonStatsView(APIView):
             date_str = record.updated_at.date().isoformat()
             if date_str not in stats:
                 stats[date_str] = {
-                    'date': record.updated_at.date(),
-                    'count': 0,
-                    'lessons': []
+                    "date": record.updated_at.date(),
+                    "count": 0,
+                    "lessons": [],
                 }
-            stats[date_str]['count'] += 1
-            stats[date_str]['lessons'].append(record.lesson.title)
+            stats[date_str]["count"] += 1
+            stats[date_str]["lessons"].append(record.lesson.title)
 
-        data = sorted(stats.values(), key=lambda x: x['date'])
+        data = sorted(stats.values(), key=lambda x: x["date"])
         serializer = DailyProgressSerializer(data, many=True)
         return Response(serializer.data)
+
+
+class LeaderboardView(APIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get(self, request):
+        time_period = request.query_params.get("time_period", "all_time")
+        search_username = request.query_params.get("username", None)
+        try:
+            page = int(request.query_params.get("page", 1))
+            limit = int(request.query_params.get("limit", 50))
+        except ValueError:
+            page = 1
+            limit = 50
+
+        from apps.progress.services.leaderboard_service import LeaderboardService
+
+        result = LeaderboardService.get_leaderboard(
+            time_period=time_period,
+            page=page,
+            limit=limit,
+            search_username=search_username,
+        )
+
+        # Add user's personal rank if authenticated and not searching
+        personal_rank = None
+        if request.user.is_authenticated and not search_username:
+            personal_rank = LeaderboardService.get_user_rank(
+                request.user.username, time_period=time_period
+            )
+
+        total_users = result.get("total_users", 0)
+        total_pages = (total_users + limit - 1) // limit if total_users > 0 else 1
+
+        return Response(
+            {
+                "leaderboard": result.get("leaderboard", []),
+                "personal_rank": personal_rank,
+                "page": page,
+                "limit": limit,
+                "total_users": total_users,
+                "total_pages": total_pages,
+            },
+            status=status.HTTP_200_OK,
+        )

@@ -30,6 +30,7 @@ from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
@@ -108,37 +109,17 @@ class SignupView(generics.CreateAPIView):
     throttle_classes = [SignupThrottle]
 
 
-@extend_schema(
-    summary="Login user",
-    description="Authenticate user and return JWT token",
-    request=UserLoginSchema,
-    responses={
-        200: OpenApiResponse(
-            description="Login successful", response=UserResponseSchema
-        ),
-        401: OpenApiResponse(description="Invalid credentials"),
-    },
-)
-def login(request):
-    pass
-
-
-@extend_schema(
-    summary="Get user profile",
-    description="Returns current user profile information",
-    responses={
-        200: UserResponseSchema,
-        401: OpenApiResponse(description="Unauthorized"),
-    },
-)
-def get_profile(request):
-    pass
-
-
 class MeView(APIView):
     permission_classes = [IsAuthenticated]  # check jwt authentication
 
-    @extend_schema(responses=UserListSerializer)
+    @extend_schema(
+        summary="Get user profile",
+        description="Returns current user profile information",
+        responses={
+            200: UserResponseSchema,
+            401: OpenApiResponse(description="Unauthorized"),
+        },
+    )
     def get(self, request):
         serializer = UserListSerializer(request.user, context={"request": request})
         return Response(serializer.data)
@@ -217,6 +198,19 @@ class UserStatisticsView(APIView):
         )
 
 
+@extend_schema_view(
+    post=extend_schema(
+        summary="Login user",
+        description="Authenticate user and return JWT token",
+        request=UserLoginSchema,
+        responses={
+            200: OpenApiResponse(
+                description="Login successful", response=TokenObtainPairSerializer
+            ),
+            401: OpenApiResponse(description="Invalid credentials"),
+        },
+    )
+)
 class LoginView(TokenObtainPairView):
     permission_classes = [permissions.AllowAny]
     serializer_class = EmailOrUsernameTokenObtainPairSerializer

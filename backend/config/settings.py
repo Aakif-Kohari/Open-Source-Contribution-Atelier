@@ -188,7 +188,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],  # ✅ ADDED: For email templates
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -280,6 +280,10 @@ EMAIL_BACKEND = os.getenv(
 )
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@atelier.dev")
 
+# ── Frontend URL for password reset links ────────────────────────────────────
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+SITE_NAME = os.getenv("SITE_NAME", "Open Source Contribution Atelier")
+
 # ── Proxy / Load-Balancer Support ─────────────────────────────────────────────
 # Number of trusted proxy hops in front of Django (e.g. Nginx + AWS ALB = 2).
 # Used by throttles.py to extract the real client IP from X-Forwarded-For.
@@ -330,6 +334,10 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "apps.accounts.exceptions.throttle_exception_handler",
 }
 
+# ============================================================
+# ✅ UPDATED: SimpleJWT Configuration with Dynamic Salt
+# ============================================================
+
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(
         minutes=int(os.getenv("ACCESS_TOKEN_LIFETIME_MINUTES", "30"))
@@ -339,6 +347,31 @@ SIMPLE_JWT = {
     ),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
+    
+    # ✅ Custom token classes for dynamic salt
+    "ACCESS_TOKEN_CLASS": ("apps.accounts.jwt.DynamicSaltAccessToken",),
+    "REFRESH_TOKEN_CLASS": ("apps.accounts.jwt.DynamicSaltRefreshToken",),
+    
+    # ✅ Other JWT settings
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "VERIFYING_KEY": None,
+    "AUDIENCE": None,
+    "ISSUER": None,
+    "JWK_URL": None,
+    "LEEWAY": 0,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+    "USER_AUTHENTICATION_RULE": "rest_framework_simplejwt.authentication.default_user_authentication_rule",
+    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    "TOKEN_TYPE_CLAIM": "token_type",
+    "TOKEN_USER_CLASS": "rest_framework_simplejwt.models.TokenUser",
+    "JTI_CLAIM": "jti",
+    "SLIDING_TOKEN_REFRESH_EXP_CLAIM": "refresh_exp",
+    "SLIDING_TOKEN_LIFETIME": timedelta(minutes=30),
+    "SLIDING_TOKEN_REFRESH_LIFETIME": timedelta(days=1),
 }
 
 # ──────────────────────────────────────────
@@ -531,6 +564,9 @@ LOGGING = {
     },
 }
 
+
+GRAPHENE = {"SCHEMA": "config.schema.schema"}
+
 GRAPHENE = {"SCHEMA": "config.schema.schema"}
 
 # ──────────────────────────────────────────
@@ -550,4 +586,5 @@ CURRICULUM_JSON_PATH = os.getenv(
 
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_STORE_EAGER_RESULT = True
+
 

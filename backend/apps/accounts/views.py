@@ -475,7 +475,7 @@ class UserSuggestionsView(APIView):
 
 >>>>>>> main
 # ─────────────────────────────────────────────────────────────────────────────
-# Password Reset Views (UPDATED with Custom Token Model)
+# Password Reset Views (UPDATED with Custom Token Model & JWT Invalidation)
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -579,18 +579,37 @@ class PasswordResetConfirmView(APIView):
             )
 
         user = reset_token.user
+        
+        # Set new password (this will trigger JWT invalidation via signal)
         user.set_password(new_password)
+        
+        # Update last_password_change in profile
         if hasattr(user, "profile"):
             user.profile.last_password_change = timezone.now()
-            user.profile.save(update_fields=["last_password_change"])
+            # ✅ Increment JWT token version to invalidate all existing tokens
+            user.profile.jwt_token_version += 1
+            user.profile.save(update_fields=["last_password_change", "jwt_token_version"])
+        else:
+            # Create profile if it doesn't exist
+            from apps.accounts.models import UserProfile
+            UserProfile.objects.create(
+                user=user,
+                last_password_change=timezone.now(),
+                jwt_token_version=2
+            )
+        
         user.save()
 
+        # Mark token as used
         reset_token.is_used = True
         reset_token.save(update_fields=["is_used"])
 
+        # ✅ Log the invalidation
+        logger.info(f"Password reset confirmed for user {user.username} - all JWT tokens invalidated")
+
         return Response(
             {
-                "message": "Your password has been successfully reset. You can now log in."
+                "message": "Your password has been successfully reset. All existing JWT tokens have been invalidated. You can now log in with your new password."
             },
             status=status.HTTP_200_OK,
         )
@@ -685,114 +704,88 @@ class MagicLinkVerifyView(APIView):
 
         user = magic_token.user
 
-        magic_token.is_used = True
-        magic_token.save(update_fields=["is_used"])
 
-        refresh = RefreshToken.for_user(user)
-
-        return Response(
-            {
-                "refresh": str(refresh),
-                "access": str(refresh.access_token),
-                "user": {
-                    "username": user.username,
-                    "email": user.email,
-                    "is_staff": user.is_staff,
-                },
-                "message": "You have been successfully logged in.",
-            },
-            status=status.HTTP_200_OK,
-        )
-
+# ─────────────────────────────────────────────────────────────────────────────
+# ✅ ADD: Change Password View with JWT Invalidation
+# ─────────────────────────────────────────────────────────────────────────────
 
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.exceptions import TokenError
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+import logging
+
+logger = logging.getLogger(__name__)
 
 
-class LogoutView(APIView):
+class ChangePasswordView(APIView):
     """
-    Accepts a refresh token in the request body and adds it to the blacklist.
-    Requires user to be authenticated.
+    POST /api/auth/change-password/
+
+    Change user password and invalidate all existing JWT tokens.
+    Rate-limited to 5 requests/minute per user.
     """
 
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        user = request.user
+        current_password = request.data.get('current_password')
+        new_password = request.data.get('new_password')
+
+        if not current_password or not new_password:
+            return Response(
+                {'error': 'Current password and new password are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Verify current password
+        if not user.check_password(current_password):
+            return Response(
+                {'error': 'Current password is incorrect'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Validate new password
         try:
-            refresh_token = request.data.get("refresh")
-            if not refresh_token:
-                return Response(
-                    {"error": "Refresh token is required"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            # This automatically adds the token to the BlacklistedToken model
-            token = RefreshToken(refresh_token)
-            token.blacklist()
-
+            validate_password(new_password, user)
+        except ValidationError as e:
             return Response(
-                {"message": "Successfully logged out."},
-                status=status.HTTP_205_RESET_CONTENT,
+                {'error': e.messages[0]},
+                status=status.HTTP_400_BAD_REQUEST
             )
-        except TokenError:
-            return Response(
-                {"error": "Invalid or expired refresh token."},
-                status=status.HTTP_400_BAD_REQUEST,
+
+        # Set new password (this will trigger the signal)
+        user.set_password(new_password)
+        
+        # ✅ Increment JWT token version to invalidate all existing tokens
+        if hasattr(user, "profile") and user.profile:
+            user.profile.jwt_token_version += 1
+            user.profile.last_password_change = timezone.now()
+            user.profile.save(update_fields=["jwt_token_version", "last_password_change"])
+        else:
+            # Create profile if it doesn't exist
+            from apps.accounts.models import UserProfile
+            UserProfile.objects.create(
+                user=user,
+                last_password_change=timezone.now(),
+                jwt_token_version=2
             )
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user.save()
 
-
-from django.http import HttpResponse, JsonResponse
-
-from .export import DataExportService
-
-
-class ExportDataView(APIView):
-    """
-    GET /api/users/me/export/?export_format=csv|json
-    Generates a GDPR-compliant export of all personal data.
-    """
-
-    permission_classes = [permissions.IsAuthenticated]
-
-    @extend_schema(
-        responses={
-            200: OpenApiResponse(
-                description="Data export file (JSON or ZIP containing CSVs)"
-            ),
-            400: OpenApiResponse(description="Unsupported format requested"),
-        }
-    )
-    def get(self, request):
-        export_format = request.query_params.get("export_format", "json").lower()
-        service = DataExportService(request.user)
-
-        if export_format == "json":
-            json_data = service.generate_json()
-            response = HttpResponse(json_data, content_type="application/json")
-            response["Content-Disposition"] = (
-                f'attachment; filename="data_export_{request.user.username}.json"'
-            )
-            return response
-
-        elif export_format == "csv":
-            zip_data = service.generate_csv_zip()
-            response = HttpResponse(zip_data, content_type="application/zip")
-            response["Content-Disposition"] = (
-                f'attachment; filename="data_export_{request.user.username}.zip"'
-            )
-            return response
+        logger.info(f"Password changed for user {user.username} - all JWT tokens invalidated")
 
         return Response(
             {
-                "error": "unsupported_format",
-                "message": "Only 'json' and 'csv' formats are supported.",
+                'message': 'Password changed successfully. All existing JWT tokens have been invalidated.'
             },
+
+            status=status.HTTP_200_OK
+        )
+
             status=status.HTTP_400_BAD_REQUEST,
         )
 

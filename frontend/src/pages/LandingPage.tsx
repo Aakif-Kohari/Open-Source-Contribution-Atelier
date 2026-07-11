@@ -7,16 +7,7 @@ import { PublicPreview } from '../components/PublicPreview';
 import { useTheme } from "../hooks/useTheme";
 import OrganizationsGrid from "../components/OrganizationsGrid";
 
-declare const require: any;
-
-// react-i18next may be optional in some environments. Import with a safe runtime fallback.
-let useTranslation: any;
-try {
-  useTranslation = require("react-i18next").useTranslation;
-} catch {
-  // Fallback: provide a minimal hook that returns identity translator
-  useTranslation = () => ({ t: (s: string) => s });
-}
+import { useTranslation } from "react-i18next";
 
 // Safely look up variables across Next.js compilation bundles and Vite browser environments
 const getEnvVar = (key: string): string => {

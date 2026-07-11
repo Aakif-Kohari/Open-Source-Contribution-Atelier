@@ -728,10 +728,6 @@ export function LessonPage() {
                       </span>
                     </div>
 
-                    <h3>💻 Git Sandbox</h3>
-                    <p>Try Git commands in this interactive terminal:</p>
-                    <GitTerminal />
-
                     <h3 className="text-lg font-black mb-4 text-text dark:text-[#f0ebe2]">
                       {lesson.quizzes![currentQuizIndex].question}
                     </h3>

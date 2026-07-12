@@ -1,8 +1,7 @@
+import toast from "react-hot-toast";
 import { enqueueOfflineAction } from "./offlineQueue";
 import { LRUCache } from "../utils/cache";
-import toast from "react-hot-toast";
 
-// Cache snippet responses for 5 minutes (300,000 ms), up to 50 unique queries
 const snippetsCache = new LRUCache<any[]>(50, 300000);
 
 // 1. Defend the environment variable retrieval against server-side execution crashes

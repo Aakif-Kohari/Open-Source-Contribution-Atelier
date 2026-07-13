@@ -1,25 +1,25 @@
 /**
  * Notes export button component.
- * 
+ *
  * @file NotesExportButton.tsx
  * @location frontend/src/components/Notes/NotesExportButton.tsx
  */
 
-import React, { useState } from 'react';
-import { useAuth } from '../../features/auth/AuthContext';
+import React, { useState } from "react";
+import { useAuth } from "../../features/auth/AuthContext";
 
 interface NotesExportButtonProps {
   className?: string;
-  variant?: 'primary' | 'secondary' | 'outline';
-  size?: 'sm' | 'md' | 'lg';
-  format?: 'md' | 'json';
+  variant?: "primary" | "secondary" | "outline";
+  size?: "sm" | "md" | "lg";
+  format?: "md" | "json";
 }
 
 export const NotesExportButton: React.FC<NotesExportButtonProps> = ({
-  className = '',
-  variant = 'primary',
-  size = 'md',
-  format = 'md',
+  className = "",
+  variant = "primary",
+  size = "md",
+  format = "md",
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,19 +35,19 @@ export const NotesExportButton: React.FC<NotesExportButtonProps> = ({
         `${import.meta.env.VITE_API_URL}/api/progress/notes/export/?format=${format}`,
         {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to export notes');
+        throw new Error(data.error || "Failed to export notes");
       }
 
       // Get filename from Content-Disposition header
-      const contentDisposition = response.headers.get('Content-Disposition');
-      let filename = `notes_export.${format === 'md' ? 'md' : 'json'}`;
+      const contentDisposition = response.headers.get("Content-Disposition");
+      let filename = `notes_export.${format === "md" ? "md" : "json"}`;
       if (contentDisposition) {
         const match = contentDisposition.match(/filename="(.+)"/);
         if (match) {
@@ -58,17 +58,16 @@ export const NotesExportButton: React.FC<NotesExportButtonProps> = ({
       // Download file
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = filename;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Export failed');
-      console.error('Export error:', err);
+      setError(err instanceof Error ? err.message : "Export failed");
+      console.error("Export error:", err);
     } finally {
       setIsLoading(false);
     }
@@ -76,18 +75,19 @@ export const NotesExportButton: React.FC<NotesExportButtonProps> = ({
 
   const getVariantClasses = () => {
     const variants = {
-      primary: 'bg-blue-600 hover:bg-blue-700 text-white',
-      secondary: 'bg-gray-700 hover:bg-gray-600 text-white',
-      outline: 'border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white',
+      primary: "bg-blue-600 hover:bg-blue-700 text-white",
+      secondary: "bg-gray-700 hover:bg-gray-600 text-white",
+      outline:
+        "border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white",
     };
     return variants[variant] || variants.primary;
   };
 
   const getSizeClasses = () => {
     const sizes = {
-      sm: 'px-3 py-1.5 text-sm',
-      md: 'px-4 py-2 text-base',
-      lg: 'px-6 py-3 text-lg',
+      sm: "px-3 py-1.5 text-sm",
+      md: "px-4 py-2 text-base",
+      lg: "px-6 py-3 text-lg",
     };
     return sizes[size] || sizes.md;
   };
@@ -139,10 +139,8 @@ export const NotesExportButton: React.FC<NotesExportButtonProps> = ({
           </>
         )}
       </button>
-      
-      {error && (
-        <span className="text-red-400 text-sm">{error}</span>
-      )}
+
+      {error && <span className="text-red-400 text-sm">{error}</span>}
     </div>
   );
 };

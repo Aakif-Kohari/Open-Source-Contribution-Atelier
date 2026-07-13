@@ -33,21 +33,21 @@ const navGroups = [
       { to: "/dashboard", label: "Dashboard", icon: LayoutGrid },
       { to: "/learning-path", label: "Lessons", icon: BookOpen },
       { to: "/challenges", label: "Challenges", icon: Trophy },
-    ]
+    ],
   },
   {
     title: "Practice",
     items: [
       { to: "/contributor-sandbox", label: "Playground", icon: TerminalSquare },
       { to: "/a11y-sandbox", label: "A11y Sandbox", icon: Eye },
-    ]
+    ],
   },
   {
     title: "Progress",
     items: [
       { to: "/portfolio", label: "Portfolio", icon: FileText },
       { to: "/leaderboard", label: "Leaderboard", icon: TrendingUp },
-    ]
+    ],
   },
   {
     title: "Collaboration",
@@ -55,14 +55,12 @@ const navGroups = [
       { to: "/community", label: "Community", icon: BriefcaseBusiness },
       { to: "/chat", label: "Chat", icon: MessageSquare },
       { to: "/peer-review", label: "Peer Review", icon: Shield },
-    ]
+    ],
   },
   {
     title: "Account",
-    items: [
-      { to: "/profile", label: "Settings", icon: Settings },
-    ]
-  }
+    items: [{ to: "/profile", label: "Settings", icon: Settings }],
+  },
 ];
 
 export function Navigation() {
@@ -161,7 +159,10 @@ export function Navigation() {
           </span>
         </div>
 
-        <nav aria-label="Sidebar navigation" className="flex-1 px-3 py-4 overflow-y-auto space-y-4">
+        <nav
+          aria-label="Sidebar navigation"
+          className="flex-1 px-3 py-4 overflow-y-auto space-y-4"
+        >
           {navGroups.map((group) => (
             <div key={group.title} className="space-y-1">
               <h3 className="px-3 text-[10px] font-mono uppercase tracking-[0.2em] text-muted/65 dark:text-[#9b8f80]/65">

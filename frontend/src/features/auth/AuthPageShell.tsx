@@ -51,10 +51,12 @@ export function AuthPageShell({
           <div className="flex flex-col sm:flex-row gap-6 mt-auto">
             <div className="flex-1 rounded-[20px] border-4 border-black bg-white p-6 shadow-card hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-card transition-all dark:bg-[#1f1c18] dark:border-[#2e2924] dark:shadow-none">
               <h3 className="font-black text-black dark:text-white text-base mb-2">
-                {mode === "login" ? "Interactive Sandboxes 💻" : "Structured Curriculum 📚"}
+                {mode === "login"
+                  ? "Interactive Sandboxes 💻"
+                  : "Structured Curriculum 📚"}
               </h3>
               <p className="text-slate-600 dark:text-[#c4bbae] text-sm font-bold leading-relaxed">
-                {mode === "login" 
+                {mode === "login"
                   ? "Practice Git commands and code changes in real time within sandboxed environments."
                   : "Learn everything from basics of version control to advanced codebase maintenance."}
               </p>

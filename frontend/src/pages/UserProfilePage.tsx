@@ -130,7 +130,11 @@ export function UserProfilePage() {
           className="flex items-center gap-1.5 px-4 py-2 text-sm font-black border-4 border-black rounded-xl bg-surface hover:bg-black hover:text-white transition-all dark:bg-[#1c1c24] dark:border-[#3a3a45] shadow-card-sm active:translate-y-0 hover:-translate-y-0.5"
           title="Copy profile link"
         >
-          {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+          {copied ? (
+            <Check size={16} className="text-green-500" />
+          ) : (
+            <Copy size={16} />
+          )}
           <span>{copied ? "Copied Link!" : "Share Profile"}</span>
         </button>
       </div>
@@ -323,7 +327,6 @@ export function UserProfilePage() {
           </div>
         </div>
       </div>
-
     </div>
   );
 }

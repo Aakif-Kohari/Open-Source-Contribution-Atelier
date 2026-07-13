@@ -55,4 +55,3 @@ describe("LandingPage", () => {
     expect(heading).toBeInTheDocument();
   });
 });
-

@@ -179,10 +179,17 @@ export async function fetchApi(endpoint: string, options: RequestOptions = {}) {
       }
 
       if (!response.ok) {
-        if (response.status === 401 && requireAuth && !endpoint.includes("/auth/refresh/")) {
+        if (
+          response.status === 401 &&
+          requireAuth &&
+          !endpoint.includes("/auth/refresh/")
+        ) {
           const refreshed = await attemptTokenRefresh();
           if (refreshed) {
-            headers.set("Authorization", `Bearer ${safeGetItem("accessToken")}`);
+            headers.set(
+              "Authorization",
+              `Bearer ${safeGetItem("accessToken")}`,
+            );
             continue;
           }
         }
@@ -491,7 +498,7 @@ export async function fetchSnippets(filters?: {
   if (filters?.search) url += `search=${filters.search}&`;
   if (filters?.is_favorite !== undefined)
     url += `is_favorite=${filters.is_favorite}&`;
-  
+
   // Try to return from cache
   const cachedData = snippetsCache.get(url);
   if (cachedData) {
@@ -655,8 +662,12 @@ export async function exportWorkspaceZip(projectId: string): Promise<void> {
 
   // Get filename from Content-Disposition header
   const contentDisposition = response.headers.get("Content-Disposition") || "";
-  const filenameMatch = contentDisposition.match(/filename(?:\*)?=(?:"([^"]+)"|UTF-8''([^;]+))/i);
-  const filename = filenameMatch ? (filenameMatch[1] || filenameMatch[2]) : "workspace-export.zip";
+  const filenameMatch = contentDisposition.match(
+    /filename(?:\*)?=(?:"([^"]+)"|UTF-8''([^;]+))/i,
+  );
+  const filename = filenameMatch
+    ? filenameMatch[1] || filenameMatch[2]
+    : "workspace-export.zip";
 
   // Create blob and download
   const blob = await response.blob();
@@ -675,7 +686,9 @@ export function getMediaUrl(path: string | null | undefined): string | null {
   if (path.startsWith("http://") || path.startsWith("https://")) {
     return path;
   }
-  const API_BASE = import.meta.env.VITE_API_BASE_URL?.trim() || `${window.location.origin}/api`;
+  const API_BASE =
+    import.meta.env.VITE_API_BASE_URL?.trim() ||
+    `${window.location.origin}/api`;
   const BACKEND_BASE = API_BASE.endsWith("/api")
     ? API_BASE.substring(0, API_BASE.length - 4)
     : API_BASE;

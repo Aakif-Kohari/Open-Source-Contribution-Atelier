@@ -24,20 +24,20 @@ export function LoginPage() {
   // ✅ Check for session expired parameter
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const expired = params.get('expired');
-    const redirect = params.get('redirect');
-    
-    if (expired === 'true') {
-      toast.error('Your session has expired. Please log in again.', {
+    const expired = params.get("expired");
+    const redirect = params.get("redirect");
+
+    if (expired === "true") {
+      toast.error("Your session has expired. Please log in again.", {
         duration: 4000,
-        position: 'bottom-center',
-        icon: '🔒',
+        position: "bottom-center",
+        icon: "🔒",
       });
     }
-    
+
     // If there's a redirect parameter, store it for after login
     if (redirect) {
-      sessionStorage.setItem('login_redirect', redirect);
+      sessionStorage.setItem("login_redirect", redirect);
     }
   }, []);
 
@@ -69,30 +69,29 @@ export function LoginPage() {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-    
+
     try {
       const tokens = await fetchApi("/auth/login/", {
         method: "POST",
         requireAuth: false,
         body: JSON.stringify({ username, password }),
       });
-      
-      login(tokens);
-      
-      // ✅ Show success toast
-      toast.success('Welcome back! 🎉', {
-        duration: 3000,
-        position: 'bottom-center',
-      });
-      
-      sessionStorage.setItem("justLoggedIn", "true");
-      const redirect = sessionStorage.getItem('login_redirect') || '/dashboard';
-      sessionStorage.removeItem('login_redirect');
-      window.location.href = redirect;
 
+      login(tokens);
+
+      // ✅ Show success toast
+      toast.success("Welcome back! 🎉", {
+        duration: 3000,
+        position: "bottom-center",
+      });
+
+      sessionStorage.setItem("justLoggedIn", "true");
+      const redirect = sessionStorage.getItem("login_redirect") || "/dashboard";
+      sessionStorage.removeItem("login_redirect");
+      window.location.href = redirect;
     } catch (err: unknown) {
       setError(getErrorMessage(err, "Failed to login"));
-      toast.error('Login failed. Please try again.');
+      toast.error("Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -197,7 +196,7 @@ export function LoginPage() {
           disabled={isLoading}
           className="w-full rounded-xl border-2 border-black bg-[#C3C0FF] px-4 py-3.5 font-black text-black text-sm shadow-card-sm hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all cursor-pointer uppercase disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isLoading ? 'Logging in...' : 'Let Me In!'}
+          {isLoading ? "Logging in..." : "Let Me In!"}
         </button>
 
         <p className="text-center text-xs font-bold mt-5 text-slate-500 dark:text-slate-400">
@@ -215,4 +214,3 @@ export function LoginPage() {
 }
 
 export default LoginPage;
-

@@ -40,28 +40,31 @@ export function ProgressReportModal({
     setExportError(null);
     try {
       const token = "";
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/progress/export/pdf/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/progress/export/pdf/`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
       if (!response.ok) {
-        throw new Error('Failed to generate PDF');
+        throw new Error("Failed to generate PDF");
       }
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = 'progress_report.pdf';
+      a.download = "progress_report.pdf";
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      console.error('Error exporting PDF:', error);
-      setExportError('Failed to download PDF. Please try again.');
+      console.error("Error exporting PDF:", error);
+      setExportError("Failed to download PDF. Please try again.");
     } finally {
       setIsExporting(false);
     }
@@ -172,7 +175,11 @@ export function ProgressReportModal({
               disabled={isExporting}
               className="flex items-center gap-2 rounded-lg bg-primary text-black border-4 border-black px-6 py-3 font-black text-sm shadow-card-sm hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-card-sm cursor-pointer disabled:opacity-50"
             >
-              {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
+              {isExporting ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Printer size={16} />
+              )}
               {isExporting ? "Generating PDF..." : "Export as PDF"}
             </button>
             <SocialShareButtons

@@ -135,7 +135,11 @@ export function NotesWidget() {
               <h3 className="font-black text-lg">E2E Notes</h3>
             </div>
             <div className="flex gap-2 items-center">
-              <NotesExportButton variant="outline" size="sm" className="border-2 border-black !px-2 !py-1 text-xs" />
+              <NotesExportButton
+                variant="outline"
+                size="sm"
+                className="border-2 border-black !px-2 !py-1 text-xs"
+              />
               <button
                 onClick={handleNewNote}
                 className="hover:bg-black/10 p-1 rounded transition-colors"

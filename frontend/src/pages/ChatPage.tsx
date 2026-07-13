@@ -66,7 +66,6 @@ export function ChatPage() {
   return (
     <div className="max-w-6xl mx-auto h-[calc(100vh-12rem)] flex flex-col justify-center min-h-0 overflow-hidden">
       <div className="rounded-[24px] border border-black/10 bg-white/80 shadow-md backdrop-blur-xl dark:bg-[#15141b]/80 dark:border-white/10 flex flex-row h-full min-h-0 overflow-hidden">
-        
         {/* Left Side: Channel / Workspace Info & Online Members */}
         <aside className="w-[240px] border-r border-black/10 dark:border-white/10 hidden md:flex flex-col bg-slate-50/50 dark:bg-black/10 h-full min-h-0 select-none">
           {/* Header */}
@@ -78,7 +77,9 @@ export function ChatPage() {
 
           {/* Active channels */}
           <div className="p-3">
-            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-2">Rooms</span>
+            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-2">
+              Rooms
+            </span>
             <div className="mt-1.5">
               <button className="w-full flex items-center gap-2 px-3 py-2 bg-[#C3C0FF]/15 text-[#8884d8] font-bold text-xs rounded-xl transition-all">
                 <Hash size={14} /> general
@@ -93,10 +94,15 @@ export function ChatPage() {
             </span>
             <div className="flex-grow overflow-y-auto custom-scrollbar space-y-2 pr-1">
               {onlineUsers.map((member) => (
-                <div key={member.user_id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                <div
+                  key={member.user_id}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                >
                   {/* Status avatar */}
                   <div className="relative">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[9px] uppercase border border-black/5 ${getAvatarColor(member.username)}`}>
+                    <div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[9px] uppercase border border-black/5 ${getAvatarColor(member.username)}`}
+                    >
                       {getInitials(member.username)}
                     </div>
                     <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 border border-white dark:border-slate-900 rounded-full" />
@@ -116,10 +122,14 @@ export function ChatPage() {
           <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-4 flex-shrink-0">
             <div className="flex items-center gap-2">
               <Hash size={18} className="text-slate-400 dark:text-slate-500" />
-              <h2 className="text-lg font-black text-slate-800 dark:text-white">general</h2>
+              <h2 className="text-lg font-black text-slate-800 dark:text-white">
+                general
+              </h2>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className={`h-2 w-2 rounded-full ${isConnected ? "bg-green-500" : "bg-red-500"}`} />
+              <span
+                className={`h-2 w-2 rounded-full ${isConnected ? "bg-green-500" : "bg-red-500"}`}
+              />
               <span className="text-[11px] font-bold text-slate-400 dark:text-[#a0a0ab] uppercase tracking-wider">
                 {isConnected ? "Connected" : "Disconnected"}
               </span>
@@ -146,7 +156,10 @@ export function ChatPage() {
           </div>
 
           {/* Typing Indicator */}
-          <TypingIndicator users={typingUsers} className="px-1 pb-1 flex-shrink-0" />
+          <TypingIndicator
+            users={typingUsers}
+            className="px-1 pb-1 flex-shrink-0"
+          />
 
           {/* Message Input Bar */}
           <div className="flex-shrink-0">
@@ -159,7 +172,6 @@ export function ChatPage() {
             />
           </div>
         </section>
-
       </div>
     </div>
   );

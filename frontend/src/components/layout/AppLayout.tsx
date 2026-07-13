@@ -51,7 +51,7 @@ export function AppLayout() {
         <Navigation />
         <main id="main-content" tabIndex={-1} className="lg:pl-[240px]">
           <div className="px-4 pb-10 pt-24 sm:px-6 lg:px-8">
-              <Outlet />
+            <Outlet />
           </div>
         </main>
         <BadgeToastNotifier />

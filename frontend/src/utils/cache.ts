@@ -61,7 +61,7 @@ export class LRUCache<T> implements ICache<T> {
       this.moveToFront(node);
     } else {
       node = { key, value, expiresAt, next: null, prev: null };
-      
+
       if (this.map.size >= this.capacity) {
         this.evictLeastRecentlyUsed();
       }
@@ -87,7 +87,7 @@ export class LRUCache<T> implements ICache<T> {
 
   private moveToFront(node: CacheNode<T>): void {
     if (this.head === node) return; // Already at the front
-    
+
     this.removeNode(node);
     this.addToFront(node);
   }

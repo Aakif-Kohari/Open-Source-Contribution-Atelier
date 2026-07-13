@@ -14,11 +14,12 @@ export function initializeTracing() {
 
   // Configure OTLP exporter to send traces to a collector endpoint
   const exporter = new OTLPTraceExporter({
-    url: import.meta.env.VITE_OTLP_ENDPOINT || "http://localhost:4318/v1/traces",
+    url:
+      import.meta.env.VITE_OTLP_ENDPOINT || "http://localhost:4318/v1/traces",
   });
 
   (provider as any).addSpanProcessor(new BatchSpanProcessor(exporter));
-  
+
   // Register the provider with a context manager
   provider.register({
     contextManager: new ZoneContextManager(),

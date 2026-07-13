@@ -46,7 +46,7 @@ export default function PortfolioPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const portData = await fetchApi("/portfolio/reports/") as Portfolio[];
+      const portData = (await fetchApi("/portfolio/reports/")) as Portfolio[];
       setPortfolios(portData);
     } catch (error) {
       console.error("Error fetching portfolio data", error);
@@ -77,7 +77,9 @@ export default function PortfolioPage() {
 
   const handleDownload = async (id: string) => {
     try {
-      const res = await fetchApi(`/portfolio/reports/${id}/download/`) as DownloadResponse;
+      const res = (await fetchApi(
+        `/portfolio/reports/${id}/download/`,
+      )) as DownloadResponse;
       if (res.download_url) {
         window.open(res.download_url, "_blank");
       }
@@ -94,27 +96,30 @@ export default function PortfolioPage() {
   };
 
   if (loading) {
-    return <div className="p-8 font-black text-center">Loading Portfolio Data...</div>;
+    return (
+      <div className="p-8 font-black text-center">
+        Loading Portfolio Data...
+      </div>
+    );
   }
 
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-10 animate-fade-in select-none">
-      
       {/* Title Header */}
       <div className="border-4 border-black bg-white p-6 rounded-2xl shadow-card dark:bg-[#1a191f] dark:border-white/10 dark:shadow-none">
         <h1 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-3">
           <Award size={36} className="text-[#8884d8]" /> Contributor Credentials
         </h1>
         <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mt-2 leading-relaxed max-w-2xl">
-          Forge certified multi-page PDF/HTML portfolios of your coding achievements, or share a verified digital credential card with hiring managers to prove your open source mastery.
+          Forge certified multi-page PDF/HTML portfolios of your coding
+          achievements, or share a verified digital credential card with hiring
+          managers to prove your open source mastery.
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 items-start">
-        
         {/* Left Side: Configuration & History */}
         <div className="space-y-8">
-          
           {/* Configuration Forge */}
           <div className="border-4 border-black bg-white p-6 sm:p-8 rounded-2xl shadow-card dark:bg-[#1a191f] dark:border-white/10 dark:shadow-none space-y-6">
             <h2 className="text-xl font-black uppercase tracking-tight text-slate-950 dark:text-white border-b-2 border-black/5 dark:border-white/5 pb-2">
@@ -215,7 +220,10 @@ export default function PortfolioPage() {
                   </thead>
                   <tbody className="divide-y divide-black/5 dark:divide-white/5">
                     {portfolios.map((port) => (
-                      <tr key={port.id} className="text-xs font-bold text-slate-700 dark:text-slate-350">
+                      <tr
+                        key={port.id}
+                        className="text-xs font-bold text-slate-700 dark:text-slate-350"
+                      >
                         <td className="py-3">
                           {new Date(port.created_at).toLocaleDateString()}
                         </td>
@@ -235,7 +243,8 @@ export default function PortfolioPage() {
                               Failed
                             </span>
                           )}
-                          {(port.status === "pending" || port.status === "processing") && (
+                          {(port.status === "pending" ||
+                            port.status === "processing") && (
                             <span className="text-amber-600 bg-amber-50 dark:bg-amber-950/20 dark:text-amber-400 px-2 py-0.5 rounded border border-amber-500/20 animate-pulse">
                               Processing...
                             </span>
@@ -258,7 +267,6 @@ export default function PortfolioPage() {
               </div>
             )}
           </div>
-
         </div>
 
         {/* Right Side: verified developer card preview */}
@@ -300,21 +308,30 @@ export default function PortfolioPage() {
               {/* Verified Achievements Shelf */}
               <div className="border-t-2 border-dashed border-black/15 pt-4 space-y-3">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-400 font-bold uppercase tracking-wider">Certificates Issued</span>
+                  <span className="text-slate-400 font-bold uppercase tracking-wider">
+                    Certificates Issued
+                  </span>
                   <span className="font-black text-slate-800 dark:text-white flex items-center gap-1">
-                    <CheckCircle size={12} className="text-green-500" /> Verified Graduate
+                    <CheckCircle size={12} className="text-green-500" />{" "}
+                    Verified Graduate
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-400 font-bold uppercase tracking-wider">Platform Rank</span>
+                  <span className="text-slate-400 font-bold uppercase tracking-wider">
+                    Platform Rank
+                  </span>
                   <span className="font-black text-slate-800 dark:text-white flex items-center gap-1">
-                    <TrendingUp size={12} className="text-[#8884d8]" /> Top Contributor
+                    <TrendingUp size={12} className="text-[#8884d8]" /> Top
+                    Contributor
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-400 font-bold uppercase tracking-wider">Weekly Streak</span>
+                  <span className="text-slate-400 font-bold uppercase tracking-wider">
+                    Weekly Streak
+                  </span>
                   <span className="font-black text-slate-800 dark:text-white flex items-center gap-1">
-                    <Zap size={12} className="text-amber-500 fill-amber-500" /> Active Coding
+                    <Zap size={12} className="text-amber-500 fill-amber-500" />{" "}
+                    Active Coding
                   </span>
                 </div>
               </div>
@@ -342,7 +359,6 @@ export default function PortfolioPage() {
             </div>
           </div>
         </aside>
-
       </div>
     </div>
   );

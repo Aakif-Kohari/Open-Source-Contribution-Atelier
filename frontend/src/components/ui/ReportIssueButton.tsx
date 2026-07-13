@@ -32,6 +32,6 @@ export default function ReportIssueButton() {
 
       <ReportIssueModal open={isOpen} onClose={() => setIsOpen(false)} />
     </>,
-    document.body
+    document.body,
   );
 }

@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 export interface ChatMessage {
   id: string;
@@ -18,7 +18,7 @@ const initialState: ChatState = {
 };
 
 export const chatSlice = createSlice({
-  name: 'chat',
+  name: "chat",
   initialState,
   reducers: {
     enqueueMessage: (state, action: PayloadAction<ChatMessage>) => {
@@ -33,5 +33,6 @@ export const chatSlice = createSlice({
   },
 });
 
-export const { enqueueMessage, clearQueue, setOnlineStatus } = chatSlice.actions;
+export const { enqueueMessage, clearQueue, setOnlineStatus } =
+  chatSlice.actions;
 export default chatSlice.reducer;

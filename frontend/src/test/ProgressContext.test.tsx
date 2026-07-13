@@ -1,10 +1,7 @@
 import { renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import {
-  ProgressProvider,
-  useProgress,
-} from "../context/ProgressContext";
+import { ProgressProvider, useProgress } from "../context/ProgressContext";
 
 describe("ProgressContext", () => {
   beforeEach(() => {
@@ -18,11 +15,7 @@ describe("ProgressContext", () => {
   });
 
   it("provides the default progress state", () => {
-    const wrapper = ({
-      children,
-    }: {
-      children: React.ReactNode;
-    }) => (
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
       <ProgressProvider>{children}</ProgressProvider>
     );
 

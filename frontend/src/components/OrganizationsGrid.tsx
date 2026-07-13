@@ -60,7 +60,9 @@ const OrganizationsGrid: React.FC = () => {
                 key={org.id}
                 className="flex items-start gap-4 p-5 bg-white border-4 border-black rounded-2xl shadow-card-sm hover:-translate-y-0.5 transition-all"
               >
-                <span className="text-2xl p-2 bg-[#ffebc2] border-2 border-black rounded-xl">🏗️</span>
+                <span className="text-2xl p-2 bg-[#ffebc2] border-2 border-black rounded-xl">
+                  🏗️
+                </span>
                 <div className="flex flex-col flex-1 min-w-0">
                   <span className="font-extrabold text-black dark:text-[#f0ebe2] truncate">
                     {org.name}
@@ -91,7 +93,9 @@ const OrganizationsGrid: React.FC = () => {
               key={org.id}
               className="flex items-start gap-4 p-5 bg-surface-low border-4 border-black dark:border-[#4a4238] rounded-2xl shadow-card-sm hover:-translate-y-0.5 transition-all"
             >
-              <span className="text-2xl p-2 bg-[#ffb5e8] border-2 border-black dark:border-[#4a4238] rounded-xl">🚀</span>
+              <span className="text-2xl p-2 bg-[#ffb5e8] border-2 border-black dark:border-[#4a4238] rounded-xl">
+                🚀
+              </span>
               <div className="flex flex-col flex-1 min-w-0">
                 <span className="font-extrabold text-black dark:text-[#f0ebe2] truncate">
                   {org.name}

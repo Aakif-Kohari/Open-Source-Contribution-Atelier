@@ -25,7 +25,9 @@ import Confetti from "react-confetti";
 const SESSION_KEY_RECENT = "recentlyViewedLessonsV1";
 const MAX_RECENT_ITEMS = 3;
 
-function safeParseRecentlyViewedLessons(raw: string | null): { slug: string; title: string }[] {
+function safeParseRecentlyViewedLessons(
+  raw: string | null,
+): { slug: string; title: string }[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -46,7 +48,6 @@ function safeParseRecentlyViewedLessons(raw: string | null): { slug: string; tit
 }
 
 const RichTextEditor = React.lazy(() =>
-
   import("../components/ui/RichTextEditor").then((mod) => ({
     default: mod.RichTextEditor,
   })),
@@ -280,7 +281,9 @@ export function LessonPage() {
       })
       .catch((err) => {
         console.error("[LessonPage] Unexpected error loading lesson:", err);
-        setError("Failed to load lesson. Please check your connection and try again.");
+        setError(
+          "Failed to load lesson. Please check your connection and try again.",
+        );
       })
       .finally(() => {
         setIsLoading(false);
@@ -313,7 +316,6 @@ export function LessonPage() {
     setShowHint(false);
     setTerminalOutput("");
     setRepoState(createInitialRepo());
-
 
     setCurrentQuizIndex(0);
     setSelectedOption(null);
@@ -378,9 +380,10 @@ export function LessonPage() {
   }, [timeLeft, quizFeedback]);
 
   const handleTimeout = useCallback(() => {
-    if (!lesson || !lesson.quizzes || !quizNonce || quizFeedback !== null) return;
+    if (!lesson || !lesson.quizzes || !quizNonce || quizFeedback !== null)
+      return;
     const currentQuiz = lesson.quizzes[currentQuizIndex];
-    
+
     quizAttemptMutation.mutate({
       question_id: `${lesson.slug}-q${currentQuizIndex}`,
       question_text: currentQuiz.question,
@@ -641,7 +644,6 @@ export function LessonPage() {
 
           {modules.map((mod, modIdx) => (
             <div key={mod.id} className="space-y-2">
-
               <h3
                 className={`font-mono text-[10px] uppercase tracking-wider font-bold px-2 py-1.5 rounded-lg border-2 transition-all
                          ${
@@ -878,10 +880,18 @@ export function LessonPage() {
                       </span>
                       <div className="flex items-center gap-3">
                         {timeLeft !== null && (
-                          <div className={`text-xs font-black px-2 py-0.5 rounded-full border-2 ${
-                            timeLeft <= 5 ? "bg-red-100 text-red-600 border-red-600 animate-pulse" : "bg-surface text-text border-black dark:border-[#2e2924] dark:text-[#f0ebe2]"
-                          }`}>
-                            ⏱ {Math.floor(timeLeft / 60).toString().padStart(2, "0")}:{(timeLeft % 60).toString().padStart(2, "0")}
+                          <div
+                            className={`text-xs font-black px-2 py-0.5 rounded-full border-2 ${
+                              timeLeft <= 5
+                                ? "bg-red-100 text-red-600 border-red-600 animate-pulse"
+                                : "bg-surface text-text border-black dark:border-[#2e2924] dark:text-[#f0ebe2]"
+                            }`}
+                          >
+                            ⏱{" "}
+                            {Math.floor(timeLeft / 60)
+                              .toString()
+                              .padStart(2, "0")}
+                            :{(timeLeft % 60).toString().padStart(2, "0")}
                           </div>
                         )}
                         <span className="text-xs font-black text-accent bg-black text-white px-2 py-0.5 rounded-full dark:bg-[#2e2924]">
@@ -1303,9 +1313,7 @@ export function LessonPage() {
       {lesson && isCompleted && (
         <LessonFeedbackWidget lessonSlug={lesson.slug} />
       )}
-      {showConfetti && (
-        <Confetti />
-      )}
+      {showConfetti && <Confetti />}
 
       {showHistory && (
         <LessonHistoryModal

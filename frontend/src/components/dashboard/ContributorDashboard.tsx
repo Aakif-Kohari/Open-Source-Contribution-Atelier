@@ -305,8 +305,19 @@ export function ContributorDashboard() {
                 Welcome back, {user?.username}.
               </h1>
               <p className="text-sm text-slate-600 dark:text-[#c4bbae] max-w-xl leading-relaxed">
-                You have completed <span className="font-extrabold text-slate-800 dark:text-white">{completedLessonsCount}</span> of <span className="font-extrabold text-slate-800 dark:text-white">{totalLessonsCount}</span> learning modules, earning{" "}
-                <span className="text-[#8884d8] font-black">{personal_stats.total_xp} XP</span>.
+                You have completed{" "}
+                <span className="font-extrabold text-slate-800 dark:text-white">
+                  {completedLessonsCount}
+                </span>{" "}
+                of{" "}
+                <span className="font-extrabold text-slate-800 dark:text-white">
+                  {totalLessonsCount}
+                </span>{" "}
+                learning modules, earning{" "}
+                <span className="text-[#8884d8] font-black">
+                  {personal_stats.total_xp} XP
+                </span>
+                .
               </p>
             </div>
           </div>
@@ -492,7 +503,9 @@ export function ContributorDashboard() {
                         <span className="text-[9px] font-black uppercase text-[#ff8000]">
                           XP Bounty: {issue.points}
                         </span>
-                        <h4 className="font-black text-sm mt-0.5 text-slate-800 dark:text-[#f0ebe2]">{issue.title}</h4>
+                        <h4 className="font-black text-sm mt-0.5 text-slate-800 dark:text-[#f0ebe2]">
+                          {issue.title}
+                        </h4>
                       </div>
                       <Link
                         to="/challenges"
@@ -505,7 +518,9 @@ export function ContributorDashboard() {
                 )
               ) : (
                 <div className="p-8 text-center bg-slate-50/50 rounded-xl border border-slate-200 border-dashed dark:bg-[#151411]">
-                  <p className="text-xs font-bold text-muted">All issues resolved! Grab a new task in Challenges board.</p>
+                  <p className="text-xs font-bold text-muted">
+                    All issues resolved! Grab a new task in Challenges board.
+                  </p>
                 </div>
               )}
             </div>
@@ -539,7 +554,9 @@ export function ContributorDashboard() {
                   strokeWidth="8"
                   fill="transparent"
                   strokeDasharray={2 * Math.PI * 52}
-                  strokeDashoffset={2 * Math.PI * 52 * (1 - completionPercentage / 100)}
+                  strokeDashoffset={
+                    2 * Math.PI * 52 * (1 - completionPercentage / 100)
+                  }
                   strokeLinecap="round"
                   className="text-[#8884d8]"
                 />
@@ -570,24 +587,29 @@ export function ContributorDashboard() {
           {/* Unlocked Achievements drawer */}
           <div className="rounded-[24px] border border-black/5 bg-white p-6 shadow-sm dark:bg-[#1f1c18] dark:border-white/5">
             <h2 className="text-lg font-black mb-4 flex items-center gap-2.5 pb-3 border-b border-slate-100 dark:border-slate-800">
-              <Award className="w-5 h-5 text-[#8884d8]" /> Earned Badges ({earnedBadges.length})
+              <Award className="w-5 h-5 text-[#8884d8]" /> Earned Badges (
+              {earnedBadges.length})
             </h2>
             {earnedBadges.length > 0 ? (
               <div className="grid grid-cols-2 gap-3">
-                {BADGES.filter((badge) => earnedBadges.includes(badge.id)).map((badge) => (
-                  <div
-                    key={badge.id}
-                    className="flex flex-col items-center text-center p-3 rounded-xl border border-slate-100 bg-slate-50/30 dark:bg-slate-800/40 dark:border-slate-700/50"
-                  >
-                    <span className="text-3xl mb-1">{badge.icon}</span>
-                    <span className="text-[10px] font-black text-slate-800 dark:text-[#f0ebe2] leading-tight line-clamp-1">
-                      {badge.name}
-                    </span>
-                  </div>
-                ))}
+                {BADGES.filter((badge) => earnedBadges.includes(badge.id)).map(
+                  (badge) => (
+                    <div
+                      key={badge.id}
+                      className="flex flex-col items-center text-center p-3 rounded-xl border border-slate-100 bg-slate-50/30 dark:bg-slate-800/40 dark:border-slate-700/50"
+                    >
+                      <span className="text-3xl mb-1">{badge.icon}</span>
+                      <span className="text-[10px] font-black text-slate-800 dark:text-[#f0ebe2] leading-tight line-clamp-1">
+                        {badge.name}
+                      </span>
+                    </div>
+                  ),
+                )}
               </div>
             ) : (
-              <p className="text-xs font-bold text-muted text-center py-4">No badges earned yet. Complete lessons to unlock!</p>
+              <p className="text-xs font-bold text-muted text-center py-4">
+                No badges earned yet. Complete lessons to unlock!
+              </p>
             )}
           </div>
         </div>

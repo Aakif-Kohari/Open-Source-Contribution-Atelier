@@ -36,9 +36,7 @@ export function useProgress(): ProgressContextType {
   const context = useContext(ProgressContext);
 
   if (!context) {
-    throw new Error(
-      "useProgress must be used within a ProgressProvider",
-    );
+    throw new Error("useProgress must be used within a ProgressProvider");
   }
 
   return context;

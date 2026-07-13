@@ -18,7 +18,6 @@ import { initializeTracing } from "./tracing";
 // Initialize OpenTelemetry tracing before rendering
 initializeTracing();
 
-
 const GOOGLE_CLIENT_ID =
   import.meta.env.VITE_GOOGLE_CLIENT_ID ||
   "27042928964-pbolsldqvdv2hfipblmrcf332evg83v8.apps.googleusercontent.com";

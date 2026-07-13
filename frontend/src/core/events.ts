@@ -42,7 +42,7 @@ export class EventBus {
   public off(event: string, callback: EventCallback): void {
     if (!this.listeners[event]) return;
     this.listeners[event] = this.listeners[event].filter(
-      (cb) => cb !== callback
+      (cb) => cb !== callback,
     );
   }
 
@@ -60,7 +60,10 @@ export class EventBus {
       try {
         cb(payload);
       } catch (err) {
-        console.error(`[EventBus] Error in listener for event '${event}':`, err);
+        console.error(
+          `[EventBus] Error in listener for event '${event}':`,
+          err,
+        );
       }
     });
 
@@ -70,7 +73,10 @@ export class EventBus {
       try {
         cb({ event, payload });
       } catch (err) {
-        console.error(`[EventBus] Error in wildcard listener for event '${event}':`, err);
+        console.error(
+          `[EventBus] Error in wildcard listener for event '${event}':`,
+          err,
+        );
       }
     });
   }

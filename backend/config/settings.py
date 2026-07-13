@@ -236,13 +236,14 @@ ASGI_APPLICATION = "config.asgi.application"
 DATABASES = {
     "default": dj_database_url.config(
         default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-        conn_max_age=int(os.getenv("CONN_MAX_AGE", "0")),  # PgBouncer uses transaction pooling, so conn_max_age=0
+        conn_max_age=int(
+            os.getenv("CONN_MAX_AGE", "0")
+        ),  # PgBouncer uses transaction pooling, so conn_max_age=0
         conn_health_checks=True,
     ),
     "replica": dj_database_url.config(
         env="REPLICA_DATABASE_URL",
-        default=os.getenv("DATABASE_URL")
-        or f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        default=os.getenv("DATABASE_URL") or f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
         conn_max_age=int(os.getenv("CONN_MAX_AGE", "0")),
         conn_health_checks=True,
     ),
@@ -395,7 +396,7 @@ SIMPLE_JWT = {
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
     "USER_AUTHENTICATION_RULE": "rest_framework_simplejwt.authentication.default_user_authentication_rule",
-    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    "AUTH_TOKEN_CLASSES": ("apps.accounts.jwt.DynamicSaltAccessToken",),
     "TOKEN_TYPE_CLAIM": "token_type",
     "TOKEN_USER_CLASS": "rest_framework_simplejwt.models.TokenUser",
     "JTI_CLAIM": "jti",
@@ -520,7 +521,7 @@ if is_redis_available(CHECK_REDIS_URL):
         "l1_memory": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
             "LOCATION": "atelier-l1-cache",
-        }
+        },
     }
 else:
     CHANNEL_LAYERS = {
@@ -536,7 +537,7 @@ else:
         "l1_memory": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
             "LOCATION": "atelier-l1-cache",
-        }
+        },
     }
 
 # Cache timeout for Search API (in seconds) - Default: 1 hour
@@ -566,33 +567,33 @@ AUDIT_LOG_ENABLED = True
 
 # Configure audit logger
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'json': {
-            'format': '%(message)s',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {
+            "format": "%(message)s",
         },
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'json',
-        },
-        'file': {
-            'class': 'logging.FileHandler',
-            'filename': 'audit.log',
-            'formatter': 'json',
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
         },
     },
-    'loggers': {
-        'audit': {
-            'handlers': ['console', 'file'],
-            'level': 'INFO',
-            'propagate': False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "json",
+        },
+        "file": {
+            "class": "logging.FileHandler",
+            "filename": "audit.log",
+            "formatter": "json",
+        },
+    },
+    "loggers": {
+        "audit": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
         },
     },
 }

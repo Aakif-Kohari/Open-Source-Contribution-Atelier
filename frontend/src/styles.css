@@ -45,7 +45,12 @@ html.dark body {
   color-scheme: dark;
   color: var(--dark-text);
   background-color: var(--dark-bg);
-  background-image: linear-gradient(135deg, #080810 0%, #0c0f1a 48%, #080f0c 100%);
+  background-image: linear-gradient(
+    135deg,
+    #080810 0%,
+    #0c0f1a 48%,
+    #080f0c 100%
+  );
 }
 
 html.dark {

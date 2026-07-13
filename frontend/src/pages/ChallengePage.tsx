@@ -38,7 +38,7 @@ export function ChallengePage() {
       setUploadMessage("✅ " + (response.message || "Upload successful"));
       toast.success("Challenges uploaded successfully!");
     } catch (error: unknown) {
-      const errMsg = ((error as Error).message || "Failed to upload");
+      const errMsg = (error as Error).message || "Failed to upload";
       setUploadMessage("❌ Error: " + errMsg);
       toast.error("Upload failed: " + errMsg);
     } finally {
@@ -58,14 +58,16 @@ export function ChallengePage() {
 
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-10 animate-fade-in select-none">
-      
       {/* Title Header Card */}
       <div className="border-4 border-black bg-white p-6 rounded-2xl shadow-card dark:bg-[#1a191f] dark:border-white/10 dark:shadow-none">
         <h1 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-3">
-          <Trophy size={36} className="text-[#ffd166]" /> Contribution Challenges
+          <Trophy size={36} className="text-[#ffd166]" /> Contribution
+          Challenges
         </h1>
         <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mt-2 leading-relaxed max-w-2xl">
-          Complete interactive git exercises and sandbox contribution drills. Improve your open source workflow by triaging issues, rebasing messy branches, and resolving merge conflicts.
+          Complete interactive git exercises and sandbox contribution drills.
+          Improve your open source workflow by triaging issues, rebasing messy
+          branches, and resolving merge conflicts.
         </p>
       </div>
 
@@ -120,14 +122,16 @@ export function ChallengePage() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-black uppercase text-slate-400 tracking-wider mr-2">Difficulty:</span>
+          <span className="text-xs font-black uppercase text-slate-400 tracking-wider mr-2">
+            Difficulty:
+          </span>
           <button
             onClick={() => setDifficulty(null)}
             className={clsx(
               "px-3 py-1.5 rounded-xl text-xs font-black uppercase border-2 border-black transition-all hover:-translate-y-0.5 cursor-pointer shadow-card-xs",
               difficulty === null
                 ? "bg-black text-white dark:bg-white dark:text-black"
-                : "bg-white text-slate-800 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+                : "bg-white text-slate-800 dark:bg-slate-800 dark:text-white dark:border-slate-700",
             )}
           >
             All
@@ -142,9 +146,9 @@ export function ChallengePage() {
                   ? d === "beginner"
                     ? "bg-green-400 text-black border-black"
                     : d === "intermediate"
-                    ? "bg-amber-400 text-black border-black"
-                    : "bg-red-400 text-black border-black"
-                  : "bg-white text-slate-800 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+                      ? "bg-amber-400 text-black border-black"
+                      : "bg-red-400 text-black border-black"
+                  : "bg-white text-slate-800 dark:bg-slate-800 dark:text-white dark:border-slate-700",
               )}
             >
               {d}
@@ -163,12 +167,16 @@ export function ChallengePage() {
             {/* Header portion */}
             <div className="p-6 border-b-2 border-black/5 dark:border-white/5 space-y-3 flex-1">
               <div className="flex items-center justify-between">
-                <span className={clsx(
-                  "text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border-2 border-black shadow-card-xs",
-                  item.difficulty === "beginner" && "bg-green-100 text-green-800",
-                  item.difficulty === "intermediate" && "bg-amber-100 text-amber-850",
-                  item.difficulty === "advanced" && "bg-red-100 text-red-800"
-                )}>
+                <span
+                  className={clsx(
+                    "text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border-2 border-black shadow-card-xs",
+                    item.difficulty === "beginner" &&
+                      "bg-green-100 text-green-800",
+                    item.difficulty === "intermediate" &&
+                      "bg-amber-100 text-amber-850",
+                    item.difficulty === "advanced" && "bg-red-100 text-red-800",
+                  )}
+                >
                   {item.difficulty}
                 </span>
                 <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">
@@ -201,7 +209,8 @@ export function ChallengePage() {
           <div className="col-span-full border-4 border-dashed border-black/10 dark:border-white/10 rounded-2xl py-16 text-center">
             <HelpCircle size={40} className="mx-auto text-slate-300 mb-3" />
             <p className="text-sm font-bold text-slate-400">
-              No matching drills found. Try loosening your search or difficulty filters!
+              No matching drills found. Try loosening your search or difficulty
+              filters!
             </p>
           </div>
         )}

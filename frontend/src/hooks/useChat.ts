@@ -60,7 +60,9 @@ export function useChat({ roomId, token, username }: UseChatOptions) {
 
         if (senderId === myId) {
           setMessages((prev) => {
-            const optimisticIdx = prev.findIndex((m) => m.id.endsWith("_optimistic"));
+            const optimisticIdx = prev.findIndex((m) =>
+              m.id.endsWith("_optimistic"),
+            );
             if (optimisticIdx !== -1) {
               return prev.map((m, idx) =>
                 idx === optimisticIdx
@@ -69,11 +71,13 @@ export function useChat({ roomId, token, username }: UseChatOptions) {
                       id: `msg_${messageIdRef.current + 1}`,
                       username: msg.username as string,
                       timestamp: msg.created_at
-                        ? new Date(msg.created_at as string).toLocaleTimeString()
+                        ? new Date(
+                            msg.created_at as string,
+                          ).toLocaleTimeString()
                         : new Date().toLocaleTimeString(),
                       created_at: msg.created_at as string | undefined,
                     }
-                  : m
+                  : m,
               );
             }
             return prev;

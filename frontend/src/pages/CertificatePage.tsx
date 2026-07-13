@@ -1,15 +1,15 @@
 /**
  * Certificate page with social sharing buttons.
- * 
+ *
  * @file CertificatePage.tsx
  * @location frontend/src/pages/CertificatePage.tsx
  */
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../features/auth/AuthContext';
-import { CertificateShareButtons } from '../components/Certificate/CertificateShareButtons';
-import toast from 'react-hot-toast';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../features/auth/AuthContext";
+import { CertificateShareButtons } from "../components/Certificate/CertificateShareButtons";
+import toast from "react-hot-toast";
 
 interface Certificate {
   id: string;
@@ -32,7 +32,7 @@ export const CertificatePage: React.FC = () => {
   useEffect(() => {
     const fetchCertificate = async () => {
       if (!hash) {
-        setError('Certificate not found');
+        setError("Certificate not found");
         setIsLoading(false);
         return;
       }
@@ -40,13 +40,13 @@ export const CertificatePage: React.FC = () => {
       try {
         const response = await fetch(`/api/progress/verify/${hash}/`);
         if (!response.ok) {
-          throw new Error('Certificate not found');
+          throw new Error("Certificate not found");
         }
         const data = await response.json();
         setCertificate(data.certificate);
       } catch (err) {
-        setError('Failed to load certificate');
-        toast.error('Certificate not found');
+        setError("Failed to load certificate");
+        toast.error("Certificate not found");
       } finally {
         setIsLoading(false);
       }
@@ -71,9 +71,12 @@ export const CertificatePage: React.FC = () => {
       <div className="min-h-screen bg-dark-900 flex items-center justify-center">
         <div className="text-center text-gray-400">
           <h2 className="text-2xl font-bold mb-2">❌ Certificate Not Found</h2>
-          <p>The certificate you're looking for doesn't exist or has been revoked.</p>
+          <p>
+            The certificate you're looking for doesn't exist or has been
+            revoked.
+          </p>
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate("/")}
             className="mt-4 px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700"
           >
             Go Home
@@ -96,11 +99,9 @@ export const CertificatePage: React.FC = () => {
             <h1 className="text-3xl font-bold text-white mb-2">
               Certificate of Completion
             </h1>
-            <p className="text-gray-400 mb-6">
-              This certifies that
-            </p>
+            <p className="text-gray-400 mb-6">This certifies that</p>
             <p className="text-2xl font-bold text-blue-400 mb-2">
-              {certificate.username || 'User'}
+              {certificate.username || "User"}
             </p>
             <p className="text-gray-400 mb-6">
               has successfully completed the course
@@ -124,7 +125,7 @@ export const CertificatePage: React.FC = () => {
               <CertificateShareButtons
                 certificateUrl={certificateUrl}
                 certificateName={certificate.course_name}
-                userName={certificate.username || user?.username || 'User'}
+                userName={certificate.username || user?.username || "User"}
                 className="justify-center"
               />
             </div>

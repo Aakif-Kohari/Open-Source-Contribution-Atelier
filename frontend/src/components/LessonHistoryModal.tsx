@@ -17,9 +17,15 @@ interface LessonHistoryModalProps {
   onClose: () => void;
 }
 
-export function LessonHistoryModal({ lessonId, currentContent, onClose }: LessonHistoryModalProps) {
+export function LessonHistoryModal({
+  lessonId,
+  currentContent,
+  onClose,
+}: LessonHistoryModalProps) {
   const [versions, setVersions] = useState<LessonVersion[]>([]);
-  const [selectedVersionId, setSelectedVersionId] = useState<number | null>(null);
+  const [selectedVersionId, setSelectedVersionId] = useState<number | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -51,9 +57,11 @@ export function LessonHistoryModal({ lessonId, currentContent, onClose }: Lesson
         <div className="flex items-center justify-between border-b-2 border-border bg-accent/10 px-6 py-4">
           <div className="flex items-center gap-2">
             <History className="h-6 w-6 text-accent" />
-            <h2 className="text-xl font-bold font-mono">Content Version History</h2>
+            <h2 className="text-xl font-bold font-mono">
+              Content Version History
+            </h2>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
           >
@@ -83,7 +91,9 @@ export function LessonHistoryModal({ lessonId, currentContent, onClose }: Lesson
                         : "border-transparent hover:border-border hover:bg-accent/5"
                     }`}
                   >
-                    <div>{format(new Date(version.createdAt), "MMM d, yyyy")}</div>
+                    <div>
+                      {format(new Date(version.createdAt), "MMM d, yyyy")}
+                    </div>
                     <div className="text-xs text-muted-foreground mt-1">
                       {format(new Date(version.createdAt), "h:mm a")}
                     </div>
@@ -100,29 +110,31 @@ export function LessonHistoryModal({ lessonId, currentContent, onClose }: Lesson
                 oldValue={oldCode}
                 newValue={newCode}
                 splitView={true}
-                useDarkTheme={document.documentElement.classList.contains("dark")}
+                useDarkTheme={document.documentElement.classList.contains(
+                  "dark",
+                )}
                 leftTitle="Selected Version"
                 rightTitle="Current Content"
                 styles={{
                   variables: {
                     dark: {
-                      diffViewerBackground: '#282c34',
-                      diffViewerColor: '#FFF',
-                      addedBackground: '#044B53',
-                      addedColor: 'white',
-                      removedBackground: '#632F34',
-                      removedColor: 'white',
-                      wordAddedBackground: '#055d67',
-                      wordRemovedBackground: '#7d383f',
-                      addedGutterBackground: '#034148',
-                      removedGutterBackground: '#632f34',
-                      gutterBackground: '#2c313a',
-                      gutterBackgroundDark: '#2c313a',
-                      highlightBackground: '#2a3967',
-                      highlightGutterBackground: '#2d4077',
-                      emptyLineBackground: '#363946',
-                    }
-                  }
+                      diffViewerBackground: "#282c34",
+                      diffViewerColor: "#FFF",
+                      addedBackground: "#044B53",
+                      addedColor: "white",
+                      removedBackground: "#632F34",
+                      removedColor: "white",
+                      wordAddedBackground: "#055d67",
+                      wordRemovedBackground: "#7d383f",
+                      addedGutterBackground: "#034148",
+                      removedGutterBackground: "#632f34",
+                      gutterBackground: "#2c313a",
+                      gutterBackgroundDark: "#2c313a",
+                      highlightBackground: "#2a3967",
+                      highlightGutterBackground: "#2d4077",
+                      emptyLineBackground: "#363946",
+                    },
+                  },
                 }}
               />
             ) : (

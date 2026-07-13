@@ -24,7 +24,6 @@ function safeParseSessionValue(raw: string | null): RecentlyViewedLesson[] {
       )
       .map((x) => ({ slug: x.slug, title: x.title }))
       .slice(0, MAX_ITEMS);
-
   } catch {
     return [];
   }
@@ -79,4 +78,3 @@ export function RecentlyViewedLessonsWidget() {
 }
 
 export default RecentlyViewedLessonsWidget;
-

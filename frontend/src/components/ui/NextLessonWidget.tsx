@@ -4,7 +4,6 @@ import { Sparkles, Info } from "lucide-react";
 
 import Tooltip from "./Tooltip";
 
-
 type WhyPayload = {
   score_breakdown?: {
     prerequisites?: number;
@@ -64,9 +63,7 @@ export function NextLessonWidget({
 
   const tooltipText = [
     prereqDetail ? `Prerequisites: ${prereqDetail}` : null,
-    missingTitles.length
-      ? `Missing: ${missingTitles.join(", ")}`
-      : null,
+    missingTitles.length ? `Missing: ${missingTitles.join(", ")}` : null,
     streakDetail ? `Streak: ${streakDetail}` : null,
     xpDetail ? `XP fit: ${xpDetail}` : null,
     recencyDetail ? `Recency: ${recencyDetail}` : null,
@@ -104,7 +101,8 @@ export function NextLessonWidget({
       <div className="grid gap-3 sm:grid-cols-[1fr_auto] items-center">
         <div className="text-xs font-bold text-black/70 dark:text-[#f0ebe2]">
           <span className="inline-flex items-center gap-2">
-            <Sparkles size={14} /> {minutes} min • {points ? `${points} XP` : "XP ready"}
+            <Sparkles size={14} /> {minutes} min •{" "}
+            {points ? `${points} XP` : "XP ready"}
           </span>
         </div>
 
@@ -122,4 +120,3 @@ export function NextLessonWidget({
     </section>
   );
 }
-

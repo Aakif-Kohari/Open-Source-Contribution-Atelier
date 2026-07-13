@@ -55,7 +55,7 @@ function FeedEntryItem({ entry }: { entry: FeedEntry }) {
   const parsedData = useMemo(() => {
     if (!entry.description) return null;
     const desc = entry.description.trim();
-    if (desc.startsWith('{') || desc.startsWith('[')) {
+    if (desc.startsWith("{") || desc.startsWith("[")) {
       try {
         return JSON.parse(desc);
       } catch {
@@ -74,7 +74,7 @@ function FeedEntryItem({ entry }: { entry: FeedEntry }) {
       if (parsedData.originalCode || parsedData.code) {
         parts.push(`Code:\n${parsedData.originalCode || parsedData.code}`);
       }
-      if (parts.length > 0) return parts.join('\n\n');
+      if (parts.length > 0) return parts.join("\n\n");
       return JSON.stringify(parsedData, null, 2);
     }
     return entry.description;
@@ -82,13 +82,16 @@ function FeedEntryItem({ entry }: { entry: FeedEntry }) {
 
   if (!formattedDescription) return null;
 
-  const shouldTruncate = formattedDescription.length > 120 || formattedDescription.includes('\n');
+  const shouldTruncate =
+    formattedDescription.length > 120 || formattedDescription.includes("\n");
 
   return (
     <div className="mt-1">
       {shouldTruncate && !isExpanded ? (
         <div className="text-xs text-muted dark:text-[#94a3b8]">
-          <p className="line-clamp-2 inline whitespace-pre-wrap">{formattedDescription}</p>
+          <p className="line-clamp-2 inline whitespace-pre-wrap">
+            {formattedDescription}
+          </p>
           <button
             onClick={() => setIsExpanded(true)}
             className="text-xs text-primary font-bold ml-1 hover:underline focus:outline-none"

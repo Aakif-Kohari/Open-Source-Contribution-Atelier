@@ -158,9 +158,7 @@ const TemplateMarketplacePage = lazy(
   () => import("../pages/TemplateMarketplacePage"),
 );
 
-const PortfolioPage = lazy(
-  () => import("../pages/PortfolioPage"),
-);
+const PortfolioPage = lazy(() => import("../pages/PortfolioPage"));
 
 function RouteLoadingFallback() {
   return (
@@ -187,7 +185,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated) {
     const wasLoggedOut = sessionStorage.getItem("userLoggedOut") === "true";
     sessionStorage.removeItem("userLoggedOut");
-    return <Navigate to={wasLoggedOut ? "/login" : "/login?expired=true"} replace />;
+    return (
+      <Navigate to={wasLoggedOut ? "/login" : "/login?expired=true"} replace />
+    );
   }
 
   return <>{children}</>;
@@ -232,11 +232,8 @@ export function AppRouter() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/verify" element={<VerifyCertificatePage />} />
-          <Route
-            path="/verify/:hash"
-            element={<VerifyCertificatePage />}
-          />
-          
+          <Route path="/verify/:hash" element={<VerifyCertificatePage />} />
+
           <Route path="/500" element={<ServerErrorPage />} />
 
           <Route path="*" element={<NotFoundPage />} />
@@ -460,20 +457,14 @@ export function AppRouter() {
             }
           />
 
-          <Route
-            path="/u/:username"
-            element={<UserProfilePage />}
-          />
+          <Route path="/u/:username" element={<UserProfilePage />} />
         </Route>
 
         {/* Existing standalone routes preserved */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/verify" element={<VerifyCertificatePage />} />
-        <Route
-          path="/verify/:hash"
-          element={<VerifyCertificatePage />}
-        />
+        <Route path="/verify/:hash" element={<VerifyCertificatePage />} />
         <Route path="/500" element={<ServerErrorPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

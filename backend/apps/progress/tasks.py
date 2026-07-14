@@ -127,6 +127,13 @@ def evaluate_achievements_task(user_id):
                     },
                 )
 
+    # Evaluate seasonal track milestones
+    try:
+        from apps.progress.services.milestone_track_service import MilestoneTrackService
+        MilestoneTrackService.evaluate_milestones(user)
+    except Exception as exc:
+        logger.error("Failed to evaluate seasonal milestones: %s", exc)
+
 
 def evaluate_user_badges_task(user_id):
     evaluate_achievements_task(user_id)

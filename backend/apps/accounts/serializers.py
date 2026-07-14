@@ -151,6 +151,8 @@ class UserListSerializer(serializers.ModelSerializer):
     twitter_url = serializers.SerializerMethodField()
     linkedin_url = serializers.SerializerMethodField()
     github_url = serializers.SerializerMethodField()
+    active_track_status = serializers.SerializerMethodField()
+    next_milestone = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -165,7 +167,17 @@ class UserListSerializer(serializers.ModelSerializer):
             "twitter_url",
             "linkedin_url",
             "github_url",
+            "active_track_status",
+            "next_milestone",
         )
+
+    def get_active_track_status(self, obj):
+        from apps.progress.services.milestone_track_service import MilestoneTrackService
+        return MilestoneTrackService.get_user_active_track_status(obj)
+
+    def get_next_milestone(self, obj):
+        from apps.progress.services.milestone_track_service import MilestoneTrackService
+        return MilestoneTrackService.get_user_next_milestone(obj)
 
     def get_avatar_url(self, obj):
         if hasattr(obj, "user_profile") and obj.user_profile.avatar:

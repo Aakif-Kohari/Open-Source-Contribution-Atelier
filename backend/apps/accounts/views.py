@@ -32,6 +32,9 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from apps.progress.models import LessonProgress, UserBadge
 from apps.progress.serializers import UserBadgeSerializer
+from schemas.user import UserCreateSchema, UserLoginSchema, UserResponseSchema, UserProfileSchema
+class LoginResponseSchema(UserResponseSchema):
+    pass
 
 from .models import MagicLinkToken, OTPToken, PasswordResetToken
 from .serializers import (
@@ -1098,3 +1101,39 @@ class LearningPathView(APIView):
             recommended = max(scored_modules, key=lambda m: m["score"])
 
         return Response({"modules": scored_modules, "next_step": recommended})
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+        return Response({"status": "password changed stub"})
+
+
+class AvatarUploadView(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+        return Response({"status": "avatar uploaded stub"})
+
+
+class ShopStreakFreezeView(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+        return Response({"status": "streak freeze purchased stub"})
+
+
+class PasswordResetValidateTokenView(APIView):
+    permission_classes = [permissions.AllowAny]
+    def post(self, request):
+        return Response({"status": "password reset token validated stub"})
+
+
+class UserSuggestionsView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        return Response([])
+
+
+class PublicProfileView(APIView):
+    permission_classes = [permissions.AllowAny]
+    def get(self, request, username):
+        return Response({"username": username, "bio": "stub profile"})

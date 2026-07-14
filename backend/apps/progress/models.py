@@ -84,6 +84,7 @@ class XPEvent(models.Model):
         ("review", "Review"),
         ("badge", "Badge"),
         ("shop", "Shop Purchase"),
+        ("milestone", "Milestone Track"),
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="xp_events")
@@ -548,3 +549,82 @@ class UserNote(models.Model):
 
     def __str__(self):
         return f"Note by {self.user.username} for {self.lesson.slug}"
+
+
+class Season(models.Model):
+    name = models.CharField(max_length=255)
+    slug = models.SlugField(unique=True)
+    description = models.TextField(blank=True)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    is_active = models.BooleanField(default=True)
+    xp_boost_multiplier = models.FloatField(default=1.0)
+    boost_activity_type = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        choices=[
+            ("lesson", "Lesson"),
+            ("exercise", "Exercise"),
+            ("pr", "Pull Request"),
+            ("issue", "Issue"),
+            ("review", "Review"),
+        ]
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-start_date"]
+
+    def __str__(self):
+        return self.name
+
+
+class TrackMilestone(models.Model):
+    season = models.ForeignKey(
+        Season, on_delete=models.CASCADE, related_name="milestones"
+    )
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    activity_type = models.CharField(
+        max_length=50,
+        choices=[
+            ("lesson", "Lesson completions"),
+            ("exercise", "Exercise completions"),
+            ("xp", "Total XP earned"),
+        ],
+        default="xp"
+    )
+    target_value = models.PositiveIntegerField(default=100)
+    xp_boost = models.PositiveIntegerField(
+        default=0, help_text="One-time XP bonus awarded on completing this milestone."
+    )
+    badge = models.ForeignKey(
+        Badge, on_delete=models.SET_NULL, null=True, blank=True, related_name="milestones"
+    )
+
+    class Meta:
+        ordering = ["target_value"]
+
+    def __str__(self):
+        return f"{self.season.name} - {self.name} (Target: {self.target_value} {self.activity_type})"
+
+
+class UserMilestoneCompletion(models.Model):
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="milestone_completions"
+    )
+    milestone = models.ForeignKey(
+        TrackMilestone, on_delete=models.CASCADE, related_name="completions"
+    )
+    completed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "milestone"], name="unique_user_milestone_completion"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} completed {self.milestone.name}"

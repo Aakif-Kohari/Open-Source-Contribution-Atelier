@@ -1,7 +1,20 @@
 import logging
 from django.conf import settings
 import meilisearch
-from meilisearch.errors import MeiliSearchApiError, MeiliSearchConnectionError
+try:
+    from meilisearch.errors import MeiliSearchApiError, MeiliSearchConnectionError
+except ImportError:
+    try:
+        from meilisearch.errors import MeilisearchApiError as MeiliSearchApiError
+    except ImportError:
+        MeiliSearchApiError = Exception
+    try:
+        from meilisearch.errors import MeilisearchCommunicationError as MeiliSearchConnectionError
+    except ImportError:
+        try:
+            from meilisearch.errors import MeilisearchConnectionError as MeiliSearchConnectionError
+        except ImportError:
+            MeiliSearchConnectionError = Exception
 
 logger = logging.getLogger(__name__)
 

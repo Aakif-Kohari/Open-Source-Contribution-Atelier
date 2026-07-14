@@ -61,7 +61,9 @@ def process_bulk_progress_updates(user, validated_data):
         progress_to_create = []
         progress_to_update = []
 
-        multiplier = XPMultiplierEvent.get_active_multiplier()
+        from apps.progress.services.milestone_track_service import MilestoneTrackService
+        season_mult = MilestoneTrackService.get_active_season_multiplier(user, "lesson")
+        multiplier = XPMultiplierEvent.get_active_multiplier() * season_mult
 
         xp_events_to_create = []
 

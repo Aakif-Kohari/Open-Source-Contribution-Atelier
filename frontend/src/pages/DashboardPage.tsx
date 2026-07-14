@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 import { SocialShareButtons } from "../components/ui/SocialShareButtons";
 import SkeletonAdminDashboard from "../components/ui/skeletons/SkeletonAdminDashboard";
 import SkeletonContributorDashboard from "../components/ui/skeletons/SkeletonContributorDashboard";
-import { useRef } from "react";
+import { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import { useElementSize } from "../hooks/useElementSize";
 import { fetchLessonsApi, Lesson } from "../lib/lessons";
 import { ContinueLearning } from '../components/ContinueLearning';

@@ -1021,6 +1021,7 @@ export function LessonPage() {
                           Submit Answer
                         </button>
                       )}
+                    </div>
                   </div>
                 ) : repoState.conflicts.length !== 0 ? (
                   <div className="rounded-2xl border-4 bg-surface-low p-6 shadow-card dark:bg-[#1f1c18] dark:border-[#2e2924] border-black mt-8">

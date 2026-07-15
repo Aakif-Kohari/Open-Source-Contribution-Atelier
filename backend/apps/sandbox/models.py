@@ -67,6 +67,18 @@ class ExecutionViolationLog(models.Model):
 
 class CollabSession(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey(
+        "sandbox.Project",
+        on_delete=models.CASCADE,
+        related_name="collab_sessions",
+        null=True,
+        blank=True,
+    )
+    allowed_users = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name="allowed_collab_sessions",
+        blank=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
     document_state = models.BinaryField(
@@ -322,3 +334,102 @@ class BulkReplaceOperation(models.Model):
         return (
             f"Bulk Replace in {self.project.name} by {self.user} at {self.created_at}"
         )
+
+
+class WorkspaceSnapshot(models.Model):
+    """
+    A saved, shareable snapshot of a project's full file tree at a point in
+    time. Fields match migration 0009_workspacesnapshot_snapshotfile.py,
+    which created these tables before the corresponding model/view code
+    landed.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name="snapshots",
+        help_text="The project this snapshot was taken from.",
+    )
+    name = models.CharField(max_length=255, help_text="Name of the snapshot")
+    description = models.TextField(
+        blank=True, help_text="Optional description of the snapshot"
+    )
+    metadata = models.JSONField(
+        blank=True,
+        default=dict,
+        help_text="Store editor layout, execution settings, etc.",
+    )
+    is_public = models.BooleanField(
+        default=False, help_text="Whether this snapshot can be forked by anyone"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Snapshot '{self.name}' of {self.project.name}"
+
+
+class SnapshotFile(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    snapshot = models.ForeignKey(
+        WorkspaceSnapshot,
+        on_delete=models.CASCADE,
+        related_name="files",
+        help_text="The snapshot this file belongs to.",
+    )
+    path = models.CharField(
+        max_length=1024,
+        help_text="The full file path within the snapshot (e.g., src/index.js).",
+    )
+    content = models.TextField(blank=True, help_text="The code content of the file.")
+    language = models.CharField(
+        max_length=50, default="javascript", help_text="The language of the file."
+    )
+
+    class Meta:
+        ordering = ["path"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["snapshot", "path"], name="unique_snapshot_file_path"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.path} ({self.snapshot.name})"
+
+
+class MaintainerScenario(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    original_code = models.TextField(help_text="The baseline code.")
+    flawed_code = models.TextField(help_text="The code with bugs/flaws.")
+    diff_content = models.TextField(help_text="The unified diff content.")
+    required_findings = models.JSONField(help_text="List of dicts: {'line': 42, 'bug_type': 'security'}")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.title
+
+
+class MaintainerEvaluation(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    scenario = models.ForeignKey(MaintainerScenario, on_delete=models.CASCADE, related_name="evaluations")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    submitted_comments = models.JSONField(help_text="The comments submitted by the user.")
+    score = models.IntegerField(default=0)
+    passed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.user} - {self.scenario.title} ({self.passed})"
+

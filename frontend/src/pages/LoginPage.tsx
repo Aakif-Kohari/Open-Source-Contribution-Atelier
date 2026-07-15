@@ -5,6 +5,8 @@ import { AuthPageShell } from "../features/auth/AuthPageShell";
 import { fetchApi } from "../lib/api";
 import { useAuth } from "../features/auth/AuthContext";
 import { toast } from "react-hot-toast";
+import { useAppDispatch } from "../store/hooks";
+import { setDemoUser } from "../features/auth/authSlice";
 
 const githubAuthUrl =
   import.meta.env?.VITE_GITHUB_OAUTH_URL ||
@@ -20,6 +22,7 @@ export function LoginPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
+  const dispatch = useAppDispatch();
 
   // ✅ Check for session expired parameter
   useEffect(() => {
@@ -189,6 +192,25 @@ export function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            dispatch(setDemoUser());
+            window.location.href = "/dashboard";
+          }}
+          className="w-full rounded-xl border-2 border-black bg-green-200 px-4 py-3 font-black text-black text-sm shadow-card-sm hover:-translate-y-0.5 transition-all cursor-pointer uppercase"
+        >
+          🚀 Demo Mode (No Login Required)
+        </button>
+
+        <div className="flex items-center gap-3">
+          <div className="h-[2px] flex-1 bg-black/10 dark:bg-white/10"></div>
+          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+            OR
+          </span>
+          <div className="h-[2px] flex-1 bg-black/10 dark:bg-white/10"></div>
         </div>
 
         <button

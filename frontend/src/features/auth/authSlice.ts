@@ -114,6 +114,16 @@ export const authSlice = createSlice({
       setAccessToken(action.payload.access);
       safeSetItem("refreshToken", action.payload.refresh);
     },
+    setDemoUser: (state) => {
+      state.user = {
+        id: 1,
+        username: "Demo Learner",
+        email: "demo@atelier.local",
+        is_staff: false,
+      };
+      state.isAuthenticated = true;
+      state.isLoading = false;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -137,6 +147,6 @@ export const authSlice = createSlice({
   },
 });
 
-export const { loginTokens } = authSlice.actions;
+export const { loginTokens, setDemoUser } = authSlice.actions;
 
 export default authSlice.reducer;

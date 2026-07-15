@@ -159,10 +159,7 @@ def cleanup_notifications_task():
 
     logger.info(f"Cleaned up {deleted_count} old notifications")
     return {"deleted_count": deleted_count}
-<<<<<<< HEAD
-=======
 
->>>>>>> pr/1691
 def purge_expired_soft_deleted_records(retention_days=30, batch_size=1000):
     """
     Automated GDPR data purge pipeline.

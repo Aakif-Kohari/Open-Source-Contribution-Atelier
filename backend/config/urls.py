@@ -90,6 +90,7 @@ urlpatterns = [
     
     # ── Prometheus Metrics ─────────────────────────────────────────────────────
     path("", include("django_prometheus.urls")),
+
     path(
         "api/redoc/",
         SpectacularRedocView.as_view(url_name="schema"),
@@ -112,9 +113,6 @@ if settings.DEBUG:
         path("api/feature-flags/", include("apps.feature_flags.urls")),
         path(
             "debug/feature-flags/", feature_flags_debug_view, name="debug-feature-flags"
-        )
-    )
-
         ),
         path(
             "api/feature-flags/debug/",

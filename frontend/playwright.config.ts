@@ -95,7 +95,6 @@ export default defineConfig({
     "**/accessibility/**/*.spec.ts",
   ],
 });
-
   testMatch: ["**/*.spec.ts", "**/accessibility/**/*.spec.ts"],
 });
 

@@ -499,6 +499,34 @@ class CollabSessionViewSet(viewsets.ModelViewSet):
 
 
 # ============================================================
+# CI/CD PIPELINE SIMULATOR
+# ============================================================
+
+from .models import PipelineExecution, PipelineJob
+from .serializers import PipelineExecutionSerializer
+
+
+class PipelineExecutionViewSet(viewsets.ModelViewSet):
+    serializer_class = PipelineExecutionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return PipelineExecution.objects.filter(user=self.request.user).prefetch_related("jobs")
+
+    def perform_create(self, serializer):
+        from .services.pipeline_simulator import run_pipeline_simulation
+        pipeline = serializer.save(user=self.request.user)
+
+        code = ""
+        if pipeline.project:
+            first_file = pipeline.project.files.first()
+            if first_file:
+                code = first_file.content
+
+        run_pipeline_simulation(pipeline, code=code)
+
+
+# ============================================================
 # MERGE CONFLICT ARENA
 # ============================================================
 
@@ -511,10 +539,6 @@ import re
 
 
 class ConflictScenarioViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    ViewSet for the 3-Way Merge Conflict Arena.
-    Serves predefined scenarios.
-    """
     queryset = ConflictScenario.objects.all()
     serializer_class = ConflictScenarioSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -524,7 +548,6 @@ class ConflictScenarioViewSet(viewsets.ReadOnlyModelViewSet):
         scenario = self.get_object()
         submitted_code = request.data.get("submitted_code", "")
 
-        # 1. Check for unresolved Git markers
         if re.search(r"<<<<<<<\s*HEAD", submitted_code) or \
            re.search(r"=======", submitted_code) or \
            re.search(r">>>>>>>", submitted_code):
@@ -538,7 +561,6 @@ class ConflictScenarioViewSet(viewsets.ReadOnlyModelViewSet):
             )
             return Response({"error": error_msg}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 2. Check if it matches expected resolution (ignoring trailing whitespace)
         def _normalize(text):
             return "\n".join(line.rstrip() for line in text.splitlines()).strip()
 

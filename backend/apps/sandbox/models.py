@@ -435,6 +435,43 @@ class MaintainerEvaluation(models.Model):
 
 
 # ============================================================
+# CI/CD PIPELINE SIMULATOR
+# ============================================================
+
+
+class PipelineExecution(models.Model):
+    """Represents a simulated CI/CD pipeline run triggered from the sandbox."""
+
+    class Status(models.TextChoices):
+        QUEUED = "queued", "Queued"
+        IN_PROGRESS = "in_progress", "In Progress"
+        SUCCESS = "success", "Success"
+        FAILED = "failed", "Failed"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="pipeline_executions",
+    )
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="pipeline_executions",
+        help_text="The project this pipeline was triggered from.",
+    )
+    trigger_command = models.CharField(
+        max_length=512,
+        blank=True,
+        help_text="The sandbox command that triggered this pipeline.",
+    )
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.QUEUED
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
 # MERGE CONFLICT ARENA
 # ============================================================
 
@@ -502,8 +539,44 @@ class ConflictAttempt(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
+
+class PipelineJob(models.Model):
+    """Represents a single stage within a PipelineExecution (e.g., Lint, Test, Audit)."""
+
+    class Status(models.TextChoices):
+        QUEUED = "queued", "Queued"
+        IN_PROGRESS = "in_progress", "In Progress"
+        SUCCESS = "success", "Success"
+        FAILED = "failed", "Failed"
+        SKIPPED = "skipped", "Skipped"
+
+    class JobType(models.TextChoices):
+        LINT = "lint", "Linting"
+        TEST = "test", "Unit Tests"
+        SECURITY = "security", "Security Audit"
+        BUILD = "build", "Build"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    pipeline = models.ForeignKey(
+        PipelineExecution,
+        on_delete=models.CASCADE,
+        related_name="jobs",
+    )
+    job_type = models.CharField(max_length=20, choices=JobType.choices)
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.QUEUED
+    )
+    log_output = models.TextField(
+        blank=True, help_text="Simulated console log output for this job."
+    )
+    duration_seconds = models.FloatField(
+        null=True, blank=True, help_text="How long this job took in seconds."
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
     class Meta:
-        ordering = ["-created_at"]
+        ordering = ["created_at"]
 
     def __str__(self):
-        return f"{self.user} on '{self.scenario.title}' [{'Passed' if self.passed else 'Failed'}]"
+        return f"{self.job_type} job in pipeline {self.pipeline_id} [{self.status}]"

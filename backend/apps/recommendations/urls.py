@@ -15,5 +15,6 @@ urlpatterns = [
         views.NextLessonRecommendationView.as_view(),
         name="next-lesson",
     ),
+    path("oss-issues/", views.OSSIssueListView.as_view(), name="oss-issues"),
 ]
 

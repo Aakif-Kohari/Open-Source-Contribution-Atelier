@@ -36,6 +36,8 @@ from .views import (
     SandboxVerifyView,
     SnippetCollectionViewSet,
     WorkspaceSnapshotViewSet,
+    MaintainerScenarioViewSet,
+    MaintainerEvaluationViewSet,
 )
 
 
@@ -49,6 +51,8 @@ router.register(
     r"snippet-collections", SnippetCollectionViewSet, basename="snippet-collection"
 )
 router.register(r"snippets", CodeSnippetViewSet, basename="snippet")
+router.register(r"maintainer-scenarios", MaintainerScenarioViewSet, basename="maintainer-scenario")
+router.register(r"maintainer-evaluations", MaintainerEvaluationViewSet, basename="maintainer-evaluation")
 # router.register(r"workspace-snapshots", WorkspaceSnapshotViewSet, basename="workspace-snapshot")
 
 # ============================================================

@@ -159,3 +159,21 @@ class WorkspaceSnapshotSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "created_at"]
+
+from .models import MaintainerScenario, MaintainerEvaluation
+
+class MaintainerScenarioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MaintainerScenario
+        fields = ['id', 'title', 'description', 'original_code', 'flawed_code', 'diff_content', 'required_findings', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+class MaintainerEvaluationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MaintainerEvaluation
+        fields = ['id', 'scenario', 'user', 'submitted_comments', 'score', 'passed', 'created_at']
+        read_only_fields = ['id', 'user', 'created_at']
+
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)

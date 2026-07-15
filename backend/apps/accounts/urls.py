@@ -1,11 +1,6 @@
 from django.urls import path
 
 from .views import (
-
-    ChangePasswordView,  # ✅ ADD THIS IMPORT
-
-    AvatarUploadView,
-
     ExportDataView,
     GitHubOAuthCallbackView,
     GitHubOAuthStartView,
@@ -19,15 +14,11 @@ from .views import (
     OtpVerifyView,
     PasswordResetConfirmView,
     PasswordResetRequestView,
-    PasswordResetValidateTokenView,
     RefreshView,
     SecureAccountDeleteView,
     SignupView,
     UserListView,
     UserStatisticsView,
-    UserSuggestionsView,
-    PublicProfileView,
-    ShopStreakFreezeView,
 )
 
 urlpatterns = [
@@ -40,8 +31,8 @@ urlpatterns = [
     path("me/export/", ExportDataView.as_view(), name="me-export"),
     path("stats/", UserStatisticsView.as_view(), name="user-stats"),
     path("users/", UserListView.as_view(), name="user-list"),
-    path("users/suggestions/", UserSuggestionsView.as_view(), name="user-suggestions"),
-    path("profile/avatar/", AvatarUploadView.as_view(), name="avatar-upload"),
+    # path("users/suggestions/", UserSuggestionsView.as_view(), name="user-suggestions"),
+    # path("profile/avatar/", AvatarUploadView.as_view(), name="avatar-upload"),
     path("logout/", LogoutView.as_view(), name="logout"),
     # ── OAuth ──────────────────────────────────────────────────────────────────
     path("google/", GoogleLoginView.as_view(), name="google-login"),
@@ -59,19 +50,19 @@ urlpatterns = [
         PasswordResetConfirmView.as_view(),
         name="password-reset-confirm",
     ),
-    path(
-        "password-reset/validate-token/",
-        PasswordResetValidateTokenView.as_view(),
-        name="password-reset-validate",
-    ),
+    # path(
+    #     "password-reset/validate-token/",
+    #     PasswordResetValidateTokenView.as_view(),
+    #     name="password-reset-validate",
+    # ),
     
     # ── Password Change (with JWT Invalidation) ──────────────────────────────
     # ✅ ADD THIS - Change Password Endpoint
-    path(
-        "change-password/",
-        ChangePasswordView.as_view(),
-        name="change-password",
-    ),
+    # path(
+    #     "change-password/",
+    #     ChangePasswordView.as_view(),
+    #     name="change-password",
+    # ),
     
     # ── OTP / Email Verification ───────────────────────────────────────────────
     path("otp/request/", OtpRequestView.as_view(), name="otp-request"),
@@ -82,6 +73,6 @@ urlpatterns = [
         "magic-link/request/", MagicLinkRequestView.as_view(), name="magic-link-request"
     ),
     path("magic-link/verify/", MagicLinkVerifyView.as_view(), name="magic-link-verify"),
-    path("profile/<str:username>/", PublicProfileView.as_view(), name="public-profile"),
-    path("shop/streak-freeze/", ShopStreakFreezeView.as_view(), name="shop-streak-freeze"),
+    # path("profile/<str:username>/", PublicProfileView.as_view(), name="public-profile"),
+    # path("shop/streak-freeze/", ShopStreakFreezeView.as_view(), name="shop-streak-freeze"),
 ]

@@ -107,9 +107,9 @@ class FeatureRequest(models.Model):
     class Meta:
         ordering = ["-priority_score", "-upvotes"]
         indexes = [
-            models.Index(fields=["status", "created_at"]),
-            models.Index(fields=["priority_score"]),
-            models.Index(fields=["category"]),
+            models.Index(fields=["status", "created_at"], name="idx_statuscreated_at"),
+            models.Index(fields=["priority_score"], name="idx_priority_score"),
+            models.Index(fields=["category"], name="idx_category"),
         ]
 
     def __str__(self):

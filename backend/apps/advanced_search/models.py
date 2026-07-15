@@ -31,7 +31,7 @@ class SearchEmbedding(models.Model):
     class Meta:
         unique_together = [["content_type", "object_id"]]
         indexes = [
-            models.Index(fields=["content_type"]),
+            models.Index(fields=["content_type"], name="idx_content_type"),
         ]
 
     def __str__(self):

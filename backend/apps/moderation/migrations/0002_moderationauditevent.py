@@ -55,8 +55,8 @@ class Migration(migrations.Migration):
             options={
                 "ordering": ["-created_at"],
                 "indexes": [
-                    models.Index(fields=["created_at"], name="moderation_ae_created_at"),
-                    models.Index(fields=["status_after"], name="moderation_ae_status_after"),
+                    models.Index(fields=["created_at"], name="idx_created_at"),
+                    models.Index(fields=["status_after"], name="idx_status_after")
                 ],
             },
         ),

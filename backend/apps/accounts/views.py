@@ -30,6 +30,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+from schemas.user import UserCreateSchema, UserLoginSchema, LoginResponseSchema, UserProfileSchema
+
 from apps.progress.models import LessonProgress, UserBadge
 from apps.progress.serializers import UserBadgeSerializer
 from schemas.user import UserCreateSchema, UserLoginSchema, UserResponseSchema, UserProfileSchema

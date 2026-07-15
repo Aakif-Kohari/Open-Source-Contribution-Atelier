@@ -59,3 +59,9 @@ class UserProfileSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class LoginResponseSchema(BaseModel):
+    """Schema for successful login response"""
+    key: str = Field(..., description="Authentication Token")
+    user: UserResponseSchema

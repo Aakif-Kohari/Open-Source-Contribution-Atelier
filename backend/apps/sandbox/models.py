@@ -387,3 +387,37 @@ class SnapshotFile(models.Model):
 
     def __str__(self):
         return f"{self.path} ({self.snapshot.name})"
+
+
+class MaintainerScenario(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    original_code = models.TextField(help_text="The baseline code.")
+    flawed_code = models.TextField(help_text="The code with bugs/flaws.")
+    diff_content = models.TextField(help_text="The unified diff content.")
+    required_findings = models.JSONField(help_text="List of dicts: {'line': 42, 'bug_type': 'security'}")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.title
+
+
+class MaintainerEvaluation(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    scenario = models.ForeignKey(MaintainerScenario, on_delete=models.CASCADE, related_name="evaluations")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    submitted_comments = models.JSONField(help_text="The comments submitted by the user.")
+    score = models.IntegerField(default=0)
+    passed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.user} - {self.scenario.title} ({self.passed})"
+

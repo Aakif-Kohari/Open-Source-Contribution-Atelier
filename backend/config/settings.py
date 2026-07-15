@@ -278,7 +278,7 @@ for db_name, db_config in DATABASES.items():
         db_config["ENGINE"] = "django_prometheus.db.backends.postgresql"
         # Disable server-side cursors to avoid issues with PgBouncer transaction pooling
         db_config.setdefault("OPTIONS", {})["DISABLE_SERVER_SIDE_CURSORS"] = True
-    elif db_config.get("ENGINE") == "django.db.backends.sqlite3":
+    elif "sqlite3" in db_config.get("ENGINE", ""):
         db_config["ENGINE"] = "django_prometheus.db.backends.sqlite3"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

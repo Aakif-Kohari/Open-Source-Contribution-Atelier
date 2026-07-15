@@ -448,3 +448,23 @@ class WorkspaceSnapshotViewSet(viewsets.ModelViewSet):
             )
         serializer.save()
  
+
+
+# ============================================================
+# MAINTAINER ROLEPLAY
+# ============================================================
+
+from .models import MaintainerScenario, MaintainerEvaluation
+from .serializers import MaintainerScenarioSerializer, MaintainerEvaluationSerializer
+
+class MaintainerScenarioViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = MaintainerScenarioSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = MaintainerScenario.objects.all()
+
+class MaintainerEvaluationViewSet(viewsets.ModelViewSet):
+    serializer_class = MaintainerEvaluationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    def get_queryset(self):
+        return MaintainerEvaluation.objects.filter(user=self.request.user)
+

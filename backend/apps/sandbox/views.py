@@ -499,6 +499,7 @@ class CollabSessionViewSet(viewsets.ModelViewSet):
 
 
 # ============================================================
+<<<<<<< HEAD
 # CI/CD PIPELINE SIMULATOR
 # ============================================================
 
@@ -530,3 +531,66 @@ class PipelineExecutionViewSet(viewsets.ModelViewSet):
 
         # Run the simulation synchronously (small jobs are fast enough)
         run_pipeline_simulation(pipeline, code=code)
+=======
+# MERGE CONFLICT ARENA
+# ============================================================
+
+from .models import ConflictScenario, ConflictAttempt
+from .serializers import ConflictScenarioSerializer, ConflictAttemptSerializer
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import status
+import re
+
+
+class ConflictScenarioViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet for the 3-Way Merge Conflict Arena.
+    Serves predefined scenarios.
+    """
+    queryset = ConflictScenario.objects.all()
+    serializer_class = ConflictScenarioSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    @action(detail=True, methods=["post"])
+    def resolve_conflict(self, request, pk=None):
+        scenario = self.get_object()
+        submitted_code = request.data.get("submitted_code", "")
+
+        # 1. Check for unresolved Git markers
+        if re.search(r"<<<<<<<\s*HEAD", submitted_code) or \
+           re.search(r"=======", submitted_code) or \
+           re.search(r">>>>>>>", submitted_code):
+            error_msg = "Your code still contains unresolved Git conflict markers."
+            ConflictAttempt.objects.create(
+                scenario=scenario,
+                user=request.user,
+                submitted_code=submitted_code,
+                passed=False,
+                error_message=error_msg,
+            )
+            return Response({"error": error_msg}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 2. Check if it matches expected resolution (ignoring trailing whitespace)
+        def _normalize(text):
+            return "\n".join(line.rstrip() for line in text.splitlines()).strip()
+
+        passed = _normalize(submitted_code) == _normalize(scenario.expected_resolution)
+        error_msg = "" if passed else "The resolved code does not match the expected correct output."
+
+        attempt = ConflictAttempt.objects.create(
+            scenario=scenario,
+            user=request.user,
+            submitted_code=submitted_code,
+            passed=passed,
+            error_message=error_msg,
+        )
+
+        return Response(
+            {
+                "passed": passed,
+                "message": "Conflict resolved successfully!" if passed else error_msg,
+            },
+            status=status.HTTP_200_OK if passed else status.HTTP_400_BAD_REQUEST,
+        )
+>>>>>>> upstream/main

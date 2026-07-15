@@ -188,7 +188,7 @@ class CollabSessionSerializer(serializers.ModelSerializer):
         fields = ["id", "project", "allowed_users", "created_at", "is_active"]
         read_only_fields = ["id", "created_at"]
 
-from .models import PipelineExecution, PipelineJob
+from .models import PipelineExecution, PipelineJob, ConflictScenario, ConflictAttempt
 
 
 class PipelineJobSerializer(serializers.ModelSerializer):
@@ -221,3 +221,37 @@ class PipelineExecutionSerializer(serializers.ModelSerializer):
             "completed_at",
         ]
         read_only_fields = ["id", "status", "created_at", "completed_at"]
+
+
+class ConflictScenarioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ConflictScenario
+        fields = [
+            "id",
+            "title",
+            "description",
+            "language",
+            "difficulty",
+            "base_code",
+            "current_code",
+            "incoming_code",
+            "hint",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]
+
+
+class ConflictAttemptSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ConflictAttempt
+        fields = [
+            "id",
+            "scenario",
+            "user",
+            "submitted_code",
+            "passed",
+            "error_message",
+            "created_at",
+        ]
+        read_only_fields = ["id", "user", "passed", "error_message", "created_at"]
+

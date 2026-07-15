@@ -39,7 +39,11 @@ from .views import (
     MaintainerScenarioViewSet,
     MaintainerEvaluationViewSet,
     CollabSessionViewSet,
+<<<<<<< HEAD
     PipelineExecutionViewSet,
+=======
+    ConflictScenarioViewSet,
+>>>>>>> upstream/main
 )
 
 
@@ -56,7 +60,11 @@ router.register(r"snippets", CodeSnippetViewSet, basename="snippet")
 router.register(r"maintainer-scenarios", MaintainerScenarioViewSet, basename="maintainer-scenario")
 router.register(r"maintainer-evaluations", MaintainerEvaluationViewSet, basename="maintainer-evaluation")
 router.register(r"collab-sessions", CollabSessionViewSet, basename="collab-session")
+<<<<<<< HEAD
 router.register(r"pipelines", PipelineExecutionViewSet, basename="pipeline")
+=======
+router.register(r"conflict-scenarios", ConflictScenarioViewSet, basename="conflict-scenario")
+>>>>>>> upstream/main
 # router.register(r"workspace-snapshots", WorkspaceSnapshotViewSet, basename="workspace-snapshot")
 
 # ============================================================

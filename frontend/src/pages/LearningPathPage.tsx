@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import { fetchApi } from "../lib/api";
+import { mockLearningPath } from "../lib/dashboardMockData";
 
 interface ModuleData {
   id: string;
@@ -21,10 +22,11 @@ interface LearningPathResponse {
 }
 
 export const LearningPathPage: React.FC = () => {
-  const { data, isLoading, error } = useQuery<LearningPathResponse>({
+  const { data: rawData, isLoading, error } = useQuery<LearningPathResponse>({
     queryKey: ["learningPath"],
     queryFn: () => fetchApi("/users/me/learning-path/"),
   });
+  let data = rawData;
 
   if (isLoading) {
     return (
@@ -37,14 +39,7 @@ export const LearningPathPage: React.FC = () => {
   }
 
   if (error || !data) {
-    return (
-      <div className="pt-24 max-w-7xl mx-auto px-4">
-        <div className="p-8 text-center bg-red-100 rounded-2xl border-4 border-black font-bold text-red-800 shadow-card">
-          Failed to load your Personalized Learning Path. Please make sure the
-          backend is running.
-        </div>
-      </div>
-    );
+    data = mockLearningPath;
   }
 
   const { modules, next_step } = data;

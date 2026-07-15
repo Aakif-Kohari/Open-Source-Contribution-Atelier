@@ -107,6 +107,14 @@ export function LessonPage() {
   const [helpSuccessMessage, setHelpSuccessMessage] = useState("");
   const MAX_HELP_CHARS = 500;
 
+  // Read Time
+  const calculateReadTime = (content: string) => {
+  const wordsPerMinute = 200;
+  const words = content.split(/\s+/).length;
+  const minutes = Math.ceil(words / wordsPerMinute);
+  return minutes;
+  };
+
   // Note Panel
   const [isNotePanelOpen, setIsNotePanelOpen] = useState(false);
 
@@ -963,6 +971,13 @@ export function LessonPage() {
               )}
             </div>
           </div>
+        </div>
+
+        <div className="lesson-info">
+         <h1>{lesson.title}</h1>
+          <span className="read-time">
+           ⏱️ {calculateReadTime(lesson.content)} min read
+         </span>
         </div>
 
         {/* Mentor Help Trigger Row */}

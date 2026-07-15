@@ -173,10 +173,12 @@ class UserListSerializer(serializers.ModelSerializer):
 
     def get_active_track_status(self, obj):
         from apps.progress.services.milestone_track_service import MilestoneTrackService
+
         return MilestoneTrackService.get_user_active_track_status(obj)
 
     def get_next_milestone(self, obj):
         from apps.progress.services.milestone_track_service import MilestoneTrackService
+
         return MilestoneTrackService.get_user_next_milestone(obj)
 
     def get_avatar_url(self, obj):
@@ -230,7 +232,10 @@ class EmailOrUsernameTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         result = super().validate(attrs)
 
-        if hasattr(self.user, "user_profile") and self.user.user_profile.last_password_change:
+        if (
+            hasattr(self.user, "user_profile")
+            and self.user.user_profile.last_password_change
+        ):
             if timezone.now() > self.user.user_profile.last_password_change + timedelta(
                 days=90
             ):
@@ -296,3 +301,19 @@ class MagicLinkVerifySerializer(serializers.Serializer):
     """Accept a magic link token to verify and login the user."""
 
     token = serializers.UUIDField()
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True, min_length=8)
+
+    def validate_new_password(self, value):
+        return validate_strong_password(value)
+
+
+class AvatarUploadSerializer(serializers.Serializer):
+    avatar = serializers.ImageField(required=True)
+
+
+class PasswordResetValidateTokenSerializer(serializers.Serializer):
+    token = serializers.UUIDField(required=True)

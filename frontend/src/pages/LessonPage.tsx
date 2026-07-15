@@ -425,6 +425,10 @@ export function LessonPage() {
         </span>
       </div>
 
+      <span className="updated-date">
+        Updated: {new Date(lesson.updatedAt).toLocaleDateString()}
+      </span>
+
       {/* Backdrop overlay — closes drawer on click-outside on mobile */}
       {isSidebarOpen && (
         <div

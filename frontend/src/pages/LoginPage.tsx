@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { GitBranch } from "lucide-react";
 import { useGoogleLogin } from "@react-oauth/google";
 import { AuthPageShell } from "../features/auth/AuthPageShell";
@@ -21,6 +22,7 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
   const { login } = useAuth();
   const dispatch = useAppDispatch();
 
@@ -59,15 +61,15 @@ export function LoginPage() {
         });
         login(tokens);
         sessionStorage.setItem("justLoggedIn", "true");
-        window.location.href = "/dashboard";
+        navigate("/dashboard");
       } catch {
         dispatch(setDemoUser());
-        window.location.href = "/dashboard";
+        navigate("/dashboard");
       }
     },
     onError: () => {
       dispatch(setDemoUser());
-      window.location.href = "/dashboard";
+      navigate("/dashboard");
     },
   });
 
@@ -94,7 +96,7 @@ export function LoginPage() {
       sessionStorage.setItem("justLoggedIn", "true");
       const redirect = sessionStorage.getItem("login_redirect") || "/dashboard";
       sessionStorage.removeItem("login_redirect");
-      window.location.href = redirect;
+      navigate(redirect);
     } catch (err: unknown) {
       setError(getErrorMessage(err, "Failed to login"));
       toast.error("Login failed. Please try again.");
@@ -201,7 +203,7 @@ export function LoginPage() {
           type="button"
           onClick={() => {
             dispatch(setDemoUser());
-            window.location.href = "/dashboard";
+            navigate("/dashboard");
           }}
           className="w-full rounded-xl border-2 border-black bg-green-200 px-4 py-3 font-black text-black text-sm shadow-card-sm hover:-translate-y-0.5 transition-all cursor-pointer uppercase"
         >

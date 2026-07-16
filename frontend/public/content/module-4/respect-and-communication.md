@@ -1,4 +1,4 @@
-# Respect & Communication
+## Respect & Communication
 
 Open source isn't just about code — it's about **people**. Good communication is just as important as writing clean code.
 
@@ -14,6 +14,8 @@ Most maintainers are volunteers. They might have a full-time job, a family, or o
 
 Think of it like sending a letter to a pen pal. You wouldn't expect a reply within the hour.
 
+---
+
 **Write Helpful Messages**
 
 When asking for help, give people everything they'd need to understand your problem:
@@ -24,6 +26,8 @@ When asking for help, give people everything they'd need to understand your prob
 - Your operating system and version details
 
 A good question is like giving someone a map to your problem — they can find the issue fast instead of asking twenty follow-up questions.
+
+---
 
 **Be Kind and Professional**
 

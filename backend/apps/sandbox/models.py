@@ -408,7 +408,9 @@ class MaintainerScenario(models.Model):
     original_code = models.TextField(help_text="The baseline code.")
     flawed_code = models.TextField(help_text="The code with bugs/flaws.")
     diff_content = models.TextField(help_text="The unified diff content.")
-    required_findings = models.JSONField(help_text="List of dicts: {'line': 42, 'bug_type': 'security'}")
+    required_findings = models.JSONField(
+        help_text="List of dicts: {'line': 42, 'bug_type': 'security'}"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -420,9 +422,13 @@ class MaintainerScenario(models.Model):
 
 class MaintainerEvaluation(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    scenario = models.ForeignKey(MaintainerScenario, on_delete=models.CASCADE, related_name="evaluations")
+    scenario = models.ForeignKey(
+        MaintainerScenario, on_delete=models.CASCADE, related_name="evaluations"
+    )
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    submitted_comments = models.JSONField(help_text="The comments submitted by the user.")
+    submitted_comments = models.JSONField(
+        help_text="The comments submitted by the user."
+    )
     score = models.IntegerField(default=0)
     passed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -472,6 +478,8 @@ class PipelineExecution(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+
+
 # MERGE CONFLICT ARENA
 # ============================================================
 
@@ -580,3 +588,82 @@ class PipelineJob(models.Model):
 
     def __str__(self):
         return f"{self.job_type} job in pipeline {self.pipeline_id} [{self.status}]"
+
+
+# ============================================================
+# FEATURE 2: TOXIC COMMUNITY DE-ESCALATION TRAINER
+# ============================================================
+
+
+class ModerationScenario(models.Model):
+    title = models.CharField(max_length=255, help_text="Title of the scenario.")
+    description = models.TextField(help_text="Context of the situation.")
+    initial_tension = models.IntegerField(
+        default=50, help_text="Starting tension level (0-100)."
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+
+class DialogueNode(models.Model):
+    scenario = models.ForeignKey(
+        ModerationScenario, on_delete=models.CASCADE, related_name="nodes"
+    )
+    node_id = models.CharField(
+        max_length=100,
+        help_text="Unique ID within the scenario (e.g., 'start', 'end_success').",
+    )
+    text = models.TextField(
+        help_text="The text spoken by the simulated user or system."
+    )
+    is_endpoint = models.BooleanField(
+        default=False, help_text="Does this node end the scenario?"
+    )
+    is_successful = models.BooleanField(
+        default=False, help_text="If endpoint, was it successfully resolved?"
+    )
+
+    class Meta:
+        unique_together = ("scenario", "node_id")
+
+    def __str__(self):
+        return f"{self.scenario.title} - Node: {self.node_id}"
+
+
+class DialogueChoice(models.Model):
+    from_node = models.ForeignKey(
+        DialogueNode, on_delete=models.CASCADE, related_name="choices"
+    )
+    to_node_id = models.CharField(
+        max_length=100, help_text="The node_id this choice leads to."
+    )
+    text = models.TextField(help_text="The response or action text for the player.")
+    tension_delta = models.IntegerField(
+        default=0, help_text="Change in tension (+ increases tension, - decreases)."
+    )
+    is_moderation_action = models.BooleanField(
+        default=False, help_text="Is this a moderation action (e.g. Ban User)?"
+    )
+
+    def __str__(self):
+        return f"Choice from {self.from_node.node_id} -> {self.to_node_id}"
+
+
+class ModerationAttempt(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="moderation_attempts",
+    )
+    scenario = models.ForeignKey(ModerationScenario, on_delete=models.CASCADE)
+    current_node = models.ForeignKey(DialogueNode, on_delete=models.SET_NULL, null=True)
+    current_tension = models.IntegerField(default=50)
+    is_completed = models.BooleanField(default=False)
+    is_successful = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Attempt by {self.user.username} on {self.scenario.title}"

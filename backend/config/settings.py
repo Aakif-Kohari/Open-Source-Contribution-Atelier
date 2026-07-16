@@ -364,8 +364,8 @@ REST_FRAMEWORK = {
     # ── Default Throttle Classes ─────────────────────────────────────────────
     "DATETIME_FORMAT": "%Y-%m-%dT%H:%M:%SZ",
     "DEFAULT_THROTTLE_CLASSES": [
-        "rest_framework.throttling.AnonRateThrottle",
-        "rest_framework.throttling.UserRateThrottle",
+        "apps.core.throttling.SlidingWindowAnonThrottle",
+        "apps.core.throttling.SlidingWindowUserThrottle",
     ],
     # ── Throttle Rates ───────────────────────────────────────────────────────
     # Sandbox endpoints

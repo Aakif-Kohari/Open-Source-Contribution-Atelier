@@ -87,10 +87,7 @@ urlpatterns = [
         SpectacularSwaggerView.as_view(url_name="schema"),  # Fixed here
         name="swagger-ui",
     ),
-    
-    # ── GraphQL ────────────────────────────────────────────────────────────────
-    path("api/graphql/", csrf_exempt(GraphQLView.as_view(graphiql=True))),
-    
+
     # ── Prometheus Metrics ─────────────────────────────────────────────────────
     path("", include("django_prometheus.urls")),
 
@@ -99,9 +96,6 @@ urlpatterns = [
         SpectacularRedocView.as_view(url_name="schema"),
         name="redoc-ui",
     ),
-    # ── GraphQL ────────────────────────────────────────────────────────────────
-    path("api/graphql/", csrf_exempt(GraphQLView.as_view(graphiql=True))),
-
 ]
 
 # ── Development URLs ──────────────────────────────────────────────────────────

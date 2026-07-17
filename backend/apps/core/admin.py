@@ -1,7 +1,10 @@
 from django.contrib import admin
 from django.urls import path
 from django.shortcuts import render, redirect
+from django.conf import settings
 from apps.core.models import AdminAuditLog, PurgeLog
+import json
+import os
 
 @admin.register(AdminAuditLog)
 class AdminAuditLogAdmin(admin.ModelAdmin):
@@ -10,7 +13,6 @@ class AdminAuditLogAdmin(admin.ModelAdmin):
     search_fields = ("actor__username", "action", "target_id", "ip_address")
     readonly_fields = ("actor", "action", "target_type", "target_id", "details", "timestamp", "ip_address")
     
-    # Read-only permissions
     def has_add_permission(self, request):
         return False
 
@@ -29,12 +31,38 @@ class PurgeLogAdmin(admin.ModelAdmin):
         urls = super().get_urls()
         custom_urls = [
             path(
+                "search-logs/",
+                self.admin_site.admin_view(self.search_logs_view),
+                name="search_logs",
+            ),
+            path(
                 "cache-dashboard/",
                 self.admin_site.admin_view(self.cache_dashboard_view),
                 name="core_purgelog_cache_dashboard",
             ),
         ]
         return custom_urls + urls
+
+    def search_logs_view(self, request):
+        request_id = request.GET.get("request_id", "").strip()
+        log_entries = []
+        if request_id:
+            log_file_path = os.path.join(settings.BASE_DIR, "audit.log")
+            if os.path.exists(log_file_path):
+                with open(log_file_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        if request_id in line:
+                            try:
+                                log_entries.append(json.loads(line))
+                            except json.JSONDecodeError:
+                                log_entries.append({"message": line.strip()})
+        context = dict(
+            self.admin_site.each_context(request),
+            request_id=request_id,
+            log_entries=log_entries,
+            title="Search Request Logs",
+        )
+        return render(request, "core/admin/search_logs.html", context)
 
     def cache_dashboard_view(self, request):
         active_tags = []
@@ -68,4 +96,3 @@ class PurgeLogAdmin(admin.ModelAdmin):
             title="Cache Invalidation Dashboard",
         )
         return render(request, "core/admin/cache_dashboard.html", context)
-

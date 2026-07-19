@@ -8,6 +8,7 @@ import { useTheme } from "../hooks/useTheme";
 import { DraggableSticker } from "../components/ui/DraggableSticker";
 import { DemoLoginButton } from "../features/auth/DemoLoginButton";
 import { formatGoogleOAuthError } from "../lib/googleOAuth";
+import { TrendingReels } from "../components/ui/TrendingReels";
 
 const getEnvVar = (key: string): string => {
   if (typeof process !== "undefined" && process.env && process.env[key])
@@ -111,9 +112,11 @@ export function LandingPage() {
   const bubble = getFeedbackBubble();
 
   return (
-    <div className="min-h-screen md:h-screen md:overflow-hidden bg-surface-lowest dark:bg-[#0a0a0f] text-text transition-colors duration-300 relative flex items-center justify-center p-3 sm:p-6">
-      {/* Draggable Stickers scattered in the background */}
-      <div className="hidden lg:block select-none pointer-events-auto">
+    <div className="min-h-screen bg-surface-lowest dark:bg-[#0a0a0f] text-text transition-colors duration-300 relative flex flex-col items-center overflow-x-hidden">
+      {/* Top main viewport wrapper */}
+      <div className="min-h-screen w-full flex items-center justify-center p-3 sm:p-6 relative">
+        {/* Draggable Stickers scattered in the background */}
+        <div className="hidden lg:block select-none pointer-events-auto">
         <DraggableSticker
           initialX={80}
           initialY={100}
@@ -305,6 +308,10 @@ export function LandingPage() {
         </div>
       </div>
     </div>
+
+    {/* Trending Reels Section */}
+    <TrendingReels />
+  </div>
   );
 }
 

@@ -17,8 +17,8 @@ import {
   EtiquetteExample,
   TONE_COACH_LESSON_SLUG,
   TONE_COACH_XP,
-} from "../../lib/maintainerReplyToneCoach";
-import { useUserProgress } from "../../hooks/useUserProgress";
+} from "../../../lib/maintainerReplyToneCoach";
+import { useUserProgress } from "../../../hooks/useUserProgress";
 import toast from "react-hot-toast";
 
 export type MaintainerReplyToneCoachProps = {

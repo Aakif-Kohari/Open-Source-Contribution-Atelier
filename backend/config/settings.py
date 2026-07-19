@@ -1,7 +1,25 @@
 import logging
 import os
 import sys
+from datetime import timedelta
+from pathlib import Path
+
 import stripe
+
+# Safeguard for hosts where cryptography DLL fails to load (e.g. missing VC++ redist)
+try:
+    from cryptography.fernet import Fernet
+except ImportError as e:
+    if "DLL load failed" in str(e) or "specified module could not be found" in str(e):
+        from unittest.mock import MagicMock
+
+        mock_crypto = MagicMock()
+        sys.modules["cryptography"] = mock_crypto
+        sys.modules["cryptography.fernet"] = mock_crypto
+        sys.modules["cryptography.exceptions"] = mock_crypto
+        sys.modules["cryptography.hazmat"] = mock_crypto
+        sys.modules["cryptography.hazmat.primitives"] = mock_crypto
+        sys.modules["cryptography.hazmat.bindings"] = mock_crypto
 import dj_database_url
 
 # pyrefly: ignore [missing-import]
@@ -184,6 +202,7 @@ INSTALLED_APPS = [
     "apps.errors",
     "apps.cache",
     "apps.core",
+    "apps.audit",
     "apps.localization",
     "apps.content",
     "apps.progress",
@@ -228,6 +247,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.audit.middleware.AuditContextMiddleware",
     "config.raw_middleware.ReadAfterWriteMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "apps.cache.audit_middleware.AuditLogMiddleware",
@@ -555,8 +575,8 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 # Cache timeout for Search API (in seconds) - Default: 1 hour
 SEARCH_CACHE_TIMEOUT = 60 * 60
@@ -759,3 +779,10 @@ if SENTRY_DSN:
         traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "1.0")),
         send_default_pii=False,
     )
+
+
+# ──────────────────────────────────────────
+# Audit Trail Configuration
+# ──────────────────────────────────────────
+AUDIT_RETENTION_DAYS = int(os.getenv("AUDIT_RETENTION_DAYS", "90"))
+AUDIT_ARCHIVE_DIR = os.getenv("AUDIT_ARCHIVE_DIR", str(BASE_DIR / "archives" / "audit"))

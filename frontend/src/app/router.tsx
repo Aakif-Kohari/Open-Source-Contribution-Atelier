@@ -219,6 +219,12 @@ const TemplateMarketplacePage = lazy(
 
 const PortfolioPage = lazy(() => import("../pages/PortfolioPage"));
 
+const ApiDocsPage = lazy(() =>
+  import("../pages/ApiDocsPage").then((module) => ({
+    default: module.ApiDocsPage,
+  })),
+);
+
 function RouteLoadingFallback() {
   return (
     <div
@@ -580,6 +586,7 @@ export function AppRouter() {
             }
           />
 
+          <Route path="/docs/api" element={<ApiDocsPage />} />
           <Route
             path="/settings/billing"
             element={

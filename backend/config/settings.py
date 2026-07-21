@@ -3,25 +3,7 @@ import os
 import sys
 from datetime import timedelta
 from pathlib import Path
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
 import stripe
-
-# Safeguard for hosts where cryptography DLL fails to load (e.g. missing VC++ redist)
-try:
-    from cryptography.fernet import Fernet
-except ImportError as e:
-    if "DLL load failed" in str(e) or "specified module could not be found" in str(e):
-        from unittest.mock import MagicMock
-
-        mock_crypto = MagicMock()
-        sys.modules["cryptography"] = mock_crypto
-        sys.modules["cryptography.fernet"] = mock_crypto
-        sys.modules["cryptography.exceptions"] = mock_crypto
-        sys.modules["cryptography.hazmat"] = mock_crypto
-        sys.modules["cryptography.hazmat.primitives"] = mock_crypto
-        sys.modules["cryptography.hazmat.bindings"] = mock_crypto
 import dj_database_url
 
 # pyrefly: ignore [missing-import]
@@ -33,24 +15,10 @@ logger = logging.getLogger(__name__)
 
 TESTING = "test" in sys.argv or "pytest" in sys.modules
 
-# Patch Django template context copy for Python 3.14 compatibility
-import copy
+WS_AUTH_MIGRATION = True 
+WS_TOKEN_TIMEOUT = 3600 
 
-from django.template.context import BaseContext
-
-
-def safe_context_copy(self):
-    cls = self.__class__
-    new_context = cls.__new__(cls)
-    for k, v in self.__dict__.items():
-        if k == "dicts":
-            new_context.dicts = self.dicts[:]
-        else:
-            setattr(new_context, k, copy.copy(v))
-    return new_context
-
-
-BaseContext.__copy__ = safe_context_copy
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
 STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
@@ -227,13 +195,20 @@ INSTALLED_APPS = [
     "apps.gamification",
     "apps.project_health",
     "django_q",
+    "apps.monitoring",
     "waffle",
     "apps.plugins.apps.PluginsConfig",
+    "apps.oauth",
 ]
+
 # Cache backends are selected with channel layers below (Redis or LocMem fallback).
 
 # Rate Limit
 DEFAULT_RATE = "100/hour"
+API_RATE_LIMIT_AUTH = int(os.getenv("API_RATE_LIMIT_AUTH", "100"))
+API_RATE_LIMIT_ANON = int(os.getenv("API_RATE_LIMIT_ANON", "20"))
+API_RATE_LIMIT_WINDOW = int(os.getenv("API_RATE_LIMIT_WINDOW", "60"))
+
 
 MIDDLEWARE = [
     "django_prometheus.middleware.PrometheusBeforeMiddleware",
@@ -249,6 +224,8 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.core.middleware.tenant.TenantContextMiddleware",  # tenant scoping (issue #1940)
+    "apps.audit.middleware.AuditContextMiddleware",
     "apps.audit.middleware.AuditContextMiddleware",
     "config.raw_middleware.ReadAfterWriteMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
@@ -256,7 +233,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "apps.core.middleware.AdminAuditMiddleware",
     "waffle.middleware.WaffleMiddleware",
-    "apps.cache.middleware.RateLimitMiddleware",
+    "apps.core.middleware.ratelimit.RateLimitMiddleware",
     "apps.sandbox.middleware.SandboxExecutionLogMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "django_prometheus.middleware.PrometheusAfterMiddleware",
@@ -289,21 +266,33 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
-DATABASES = {
-    "default": dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-        conn_max_age=int(
-            os.getenv("CONN_MAX_AGE", "0")
-        ),  # PgBouncer uses transaction pooling, so conn_max_age=0
-        conn_health_checks=True,
-    ),
-    "replica": dj_database_url.config(
-        env="REPLICA_DATABASE_URL",
-        default=os.getenv("DATABASE_URL") or f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-        conn_max_age=int(os.getenv("CONN_MAX_AGE", "0")),
-        conn_health_checks=True,
-    ),
-}
+if TESTING:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        },
+        "replica": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        },
+    }
+else:
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+            conn_max_age=int(
+                os.getenv("CONN_MAX_AGE", "0")
+            ),  # PgBouncer uses transaction pooling, so conn_max_age=0
+            conn_health_checks=True,
+        ),
+        "replica": dj_database_url.config(
+            env="REPLICA_DATABASE_URL",
+            default=os.getenv("DATABASE_URL") or f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+            conn_max_age=int(os.getenv("CONN_MAX_AGE", "0")),
+            conn_health_checks=True,
+        ),
+    }
 
 for db_name, db_config in DATABASES.items():
     if db_config.get("ENGINE") == "django.db.backends.postgresql":
@@ -577,8 +566,8 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media') 
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 # Cache timeout for Search API (in seconds) - Default: 1 hour
 SEARCH_CACHE_TIMEOUT = 60 * 60
@@ -800,3 +789,16 @@ if SENTRY_DSN:
 # ──────────────────────────────────────────
 AUDIT_RETENTION_DAYS = int(os.getenv("AUDIT_RETENTION_DAYS", "90"))
 AUDIT_ARCHIVE_DIR = os.getenv("AUDIT_ARCHIVE_DIR", str(BASE_DIR / "archives" / "audit"))
+
+# ──────────────────────────────────────────
+# Content Security Policy (CSP)
+# ──────────────────────────────────────────
+CONTENT_SECURITY_POLICY = (
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+    "style-src 'self' 'unsafe-inline'; "
+    "img-src 'self' data: https:; "
+    "font-src 'self' data: https:; "
+    "object-src 'none'; "
+    "frame-ancestors 'none';"
+)

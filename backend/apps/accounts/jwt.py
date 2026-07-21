@@ -24,18 +24,23 @@ class DynamicSaltAccessToken(AccessToken):
 
     @classmethod
     def for_user(cls, user: User):
-        """
-        Generate token with user-specific salt.
-        """
+
         token = cls()
         token["user_id"] = user.pk
-
-        # Add user's password hash as part of the token
-        # This ensures token becomes invalid when password changes
         token["password_hash"] = cls._get_user_password_hash(user)
         token["token_version"] = cls._get_token_version(user)
-
+        # Tenant claim used by TenantContextMiddleware to scope queries.
+        token["organization_id"] = cls._get_user_organization_id(user)
         return token
+
+    @staticmethod
+    def _get_user_organization_id(user: User):
+        """Return the user's default organization id, or None."""
+        profile = getattr(user, "user_profile", None)
+        if profile is None:
+            return None
+        org_id = getattr(profile, "organization_id", None)
+        return int(org_id) if org_id is not None else None
 
     @staticmethod
     def _get_user_password_hash(user: User) -> str:
@@ -82,6 +87,26 @@ class DynamicSaltAccessToken(AccessToken):
         if token_version is not None and stored_version != token_version:
             raise DynamicSaltValidationError("Token has been revoked")
 
+        # Check session_id if present
+        session_id = self.get("session_id")
+        if session_id:
+            from .models import UserSession
+            from django.utils import timezone
+            from datetime import timedelta
+            try:
+                session = UserSession.objects.get(session_id=session_id)
+                now = timezone.now()
+                if now > session.last_activity + timedelta(days=7):
+                    session.delete()
+                    raise DynamicSaltValidationError("Session expired due to inactivity")
+                
+                # Update last_activity (debounced 5 mins)
+                if now > session.last_activity + timedelta(minutes=5):
+                    session.last_activity = now
+                    session.save(update_fields=['last_activity'])
+            except UserSession.DoesNotExist:
+                raise DynamicSaltValidationError("Session has been revoked")
+
 
 class DynamicSaltRefreshToken(RefreshToken):
     """
@@ -90,15 +115,24 @@ class DynamicSaltRefreshToken(RefreshToken):
 
     @classmethod
     def for_user(cls, user: User):
-        """
-        Generate refresh token with user-specific salt.
-        """
+
         token = cls()
         token["user_id"] = user.pk
-        token["password_hash"] = DynamicSaltAccessToken._get_user_password_hash(user)
-        token["token_version"] = DynamicSaltAccessToken._get_token_version(user)
-
+        token["password_hash"] = cls._get_user_password_hash(user)
+        token["token_version"] = cls._get_token_version(user)
+        # Mirror the tenant claim on the refresh token so rotated
+        # access tokens can inherit it without an extra DB hit.
+        token["organization_id"] = cls._get_user_organization_id(user)
         return token
+
+    @staticmethod
+    def _get_user_organization_id(user: User):
+        """Return the user's default organization id, or None."""
+        profile = getattr(user, "user_profile", None)
+        if profile is None:
+            return None
+        org_id = getattr(profile, "organization_id", None)
+        return int(org_id) if org_id is not None else None
 
     def verify(self):
         """Verify refresh token with dynamic salt."""
@@ -129,3 +163,18 @@ class DynamicSaltRefreshToken(RefreshToken):
 
         if token_version is not None and stored_version != token_version:
             raise DynamicSaltValidationError("Refresh token has been revoked")
+
+        # Check session_id if present
+        session_id = self.get("session_id")
+        if session_id:
+            from .models import UserSession
+            from django.utils import timezone
+            from datetime import timedelta
+            try:
+                session = UserSession.objects.get(session_id=session_id)
+                now = timezone.now()
+                if now > session.last_activity + timedelta(days=7):
+                    session.delete()
+                    raise DynamicSaltValidationError("Session expired due to inactivity")
+            except UserSession.DoesNotExist:
+                raise DynamicSaltValidationError("Session has been revoked")

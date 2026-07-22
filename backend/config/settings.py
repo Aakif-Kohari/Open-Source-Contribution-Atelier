@@ -606,81 +606,94 @@ Q_CLUSTER = {
     "bulk": 10,
     **_q_broker,
 }
+# ──────────────────────────────────────────
 # Audit Logging
+# ──────────────────────────────────────────
 AUDIT_LOG_ENABLED = True
 
-# Configure audit logger
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "filters": {
-        "request_id": {
-            "()": "apps.core.logging_filters.RequestIdFilter",
-        },
-    },
-    "formatters": {
-        "json": {
-            "format": '{"time": "%(asctime)s", "level": "%(levelname)s", "request_id": "%(request_id)s", "user_id": "%(user_id)s", "message": "%(message)s"}',
-        },
-        "verbose": {
-            "format": "{levelname} {asctime} [req:{request_id} user:{user_id}] {module} {process:d} {thread:d} {message}",
-            "style": "{",
-        },
-    },
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "json",
-            "filters": ["request_id"],
-        },
-        "file": {
-            "class": "logging.FileHandler",
-            "filename": "audit.log",
-            "formatter": "json",
-            "filters": ["request_id"],
-        },
-    },
-    "loggers": {
-        "audit": {
-            "handlers": ["console", "file"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        # Add root logger or generic loggers to also use console if needed
-        "": {
-            "handlers": ["console"],
-            "level": "INFO",
-        },
-    },
-}
-
 # ──────────────────────────────────────────
-# Logging Configuration
+# Logging Configuration  (single canonical dict)
+# ──────────────────────────────────────────
+# Merges audit/JSON file logging (with request_id correlation) and
+# console logging with sensitive-data masking.  Both sub-systems were
+# previously defined as separate LOGGING dicts; Python's top-down
+# execution meant only the second one ever took effect (issue #2008).
 # ──────────────────────────────────────────
 REQUEST_LOGGING_VERBOSITY = os.getenv("REQUEST_LOGGING_VERBOSITY", "minimal")
 
+# Audit file handler is active unless we are running the test suite,
+# where writing to disk is undesirable and would leave stale files.
+_audit_handlers: list = ["console_audit"] + (["file_audit"] if not TESTING else [])
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    # ── Filters ─────────────────────────────────────────────────────────────
     "filters": {
+        # Injects request_id and user_id into every log record routed
+        # through the audit pipeline so they appear in structured JSON.
+        "request_id": {
+            "()": "apps.core.logging_filters.RequestIdFilter",
+        },
+        # Masks PII (emails, JWT tokens, secrets) from console output.
         "mask_sensitive_data": {
             "()": "config.logging_filters.SensitiveDataFilter",
         },
     },
+    # ── Formatters ──────────────────────────────────────────────────────────
     "formatters": {
+        # Structured JSON formatter used by the audit file handler and the
+        # dedicated audit console handler.  Includes request_id / user_id
+        # fields that are injected by RequestIdFilter.
+        "json_audit": {
+            "format": (
+                '{"time": "%(asctime)s", "level": "%(levelname)s", '
+                '"request_id": "%(request_id)s", "user_id": "%(user_id)s", '
+                '"message": "%(message)s"}'
+            ),
+        },
+        # Human-readable formatter for general console output.
         "verbose": {
             "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
             "style": "{",
         },
     },
+    # ── Handlers ─────────────────────────────────────────────────────────────
     "handlers": {
+        # General-purpose console handler: human-readable, PII-masked.
         "console": {
             "class": "logging.StreamHandler",
             "filters": ["mask_sensitive_data"],
             "formatter": "verbose",
         },
+        # Audit console handler: structured JSON with request correlation.
+        # Separate from the general console handler so that audit events
+        # always appear in JSON form regardless of verbosity settings.
+        "console_audit": {
+            "class": "logging.StreamHandler",
+            "filters": ["request_id", "mask_sensitive_data"],
+            "formatter": "json_audit",
+        },
+        # Audit file handler: writes JSON-structured audit events to
+        # audit.log, satisfying the AUDIT_LOG_ENABLED = True requirement.
+        # Disabled automatically in TESTING mode (see _audit_handlers above).
+        "file_audit": {
+            "class": "logging.FileHandler",
+            "filename": os.path.join(BASE_DIR, "audit.log"),
+            "filters": ["request_id", "mask_sensitive_data"],
+            "formatter": "json_audit",
+        },
     },
+    # ── Loggers ──────────────────────────────────────────────────────────────
     "loggers": {
+        # Dedicated audit logger — writes to both the audit console and
+        # file handlers.  propagate=False prevents double-logging via root.
+        "audit": {
+            "handlers": _audit_handlers,
+            "level": "INFO",
+            "propagate": False,
+        },
+        # Django framework loggers: general console with PII masking.
         "django": {
             "handlers": ["console"],
             "level": "INFO",
@@ -691,20 +704,19 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
+        # Application loggers: general console with PII masking.
         "apps": {
             "handlers": ["console"],
             "level": "INFO",
             "propagate": False,
         },
     },
+    # Root logger catches everything not matched by a named logger above.
     "root": {
         "handlers": ["console"],
         "level": "INFO",
     },
 }
-
-
-GRAPHENE = {"SCHEMA": "config.schema.schema"}
 
 GRAPHENE = {"SCHEMA": "config.schema.schema"}
 

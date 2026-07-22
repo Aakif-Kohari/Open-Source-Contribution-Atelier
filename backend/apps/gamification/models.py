@@ -1,5 +1,7 @@
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.utils import timezone
 
 
 class Badge(models.Model):
@@ -38,3 +40,70 @@ class Streak(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.current_streak} days"
+
+
+class Quest(models.Model):
+    FREQUENCY_CHOICES = [
+        ("daily", "Daily"),
+        ("weekly", "Weekly"),
+    ]
+
+    QUEST_TYPE_CHOICES = [
+        ("complete_lessons", "Complete Lessons"),
+        ("earn_xp", "Earn XP"),
+        ("maintain_streak", "Maintain Streak"),
+        ("complete_quiz", "Complete Quiz"),
+        ("review_pr", "Review Pull Request"),
+        ("earn_badge", "Earn Badge"),
+        ("complete_challenge", "Complete Challenge"),
+        ("use_sandbox", "Use Sandbox"),
+    ]
+
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    quest_type = models.CharField(max_length=50, choices=QUEST_TYPE_CHOICES)
+    frequency = models.CharField(max_length=10, choices=FREQUENCY_CHOICES, default="daily")
+    requirement_count = models.PositiveIntegerField(
+        default=1,
+        help_text="How many actions needed to complete (e.g. 3 lessons)",
+    )
+    xp_reward = models.PositiveIntegerField(default=50)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["frequency", "xp_reward"]
+
+    def __str__(self):
+        return f"[{self.frequency}] {self.title} ({self.xp_reward} XP)"
+
+
+class UserQuest(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="quests"
+    )
+    quest = models.ForeignKey(
+        Quest, on_delete=models.CASCADE, related_name="user_quests"
+    )
+    progress = models.PositiveIntegerField(default=0)
+    completed = models.BooleanField(default=False)
+    reward_claimed = models.BooleanField(default=False)
+    assigned_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        unique_together = ("user", "quest", "assigned_at")
+        ordering = ["-assigned_at"]
+
+    def __str__(self):
+        return f"{self.user} - {self.quest.title} ({self.progress}/{self.quest.requirement_count})"
+
+    @property
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    def add_progress(self, amount=1):
+        self.progress += amount
+        if self.progress >= self.quest.requirement_count and not self.completed:
+            self.completed = True
+        self.save(update_fields=["progress", "completed"])

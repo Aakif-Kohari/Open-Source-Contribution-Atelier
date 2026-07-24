@@ -7,6 +7,7 @@ import {
   PAUSE,
   PERSIST,
   PURGE,
+  REGISTER,
 } from "redux-persist";
 import createWebStorage from "redux-persist/lib/storage/createWebStorage";
 

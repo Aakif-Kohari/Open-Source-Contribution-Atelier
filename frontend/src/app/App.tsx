@@ -14,6 +14,10 @@ import { OfflineBanner } from "../components/ui/OfflineBanner";
 import { InstallAppBanner } from "../components/ui/InstallAppBanner";
 import { UpdateAvailableBanner } from "../components/ui/UpdateAvailableBanner";
 import { ConflictResolutionModal } from "../components/ui/ConflictResolutionModal";
+
+// ✅ Import BackToTop Component
+import BackToTop from "../components/BackToTop";
+
 // Pure React Onboarding Tour Step Definition Type Map
 interface TourStep {
   target: string;
@@ -148,6 +152,13 @@ export function App({ children }: { children?: React.ReactNode }) {
             <ReportIssueButton />
             <CustomCursor />
             <WebSocketStatusIndicator url="" />
+
+            {/* ✅ Back to Top Button - Appears on all pages */}
+            <BackToTop 
+              threshold={300} 
+              behavior="smooth"
+              showProgress={true}
+            />
 
             {/* Pure React Onboarding Modals Highlight Tour Overlay Portal */}
             {currentStep >= 0 && coords && (

@@ -114,12 +114,11 @@ const OrganizationsGrid: React.FC = () => {
       </div>
 
       <div className="grid gap-3 grid-cols-2 md:grid-cols-3">
-      <div className="org-card coming-soon">
-      
         {organizations.map((org) => (
           <a
-            href="mailto:partners@atelier.dev"
-            className="text-black hover:underline transition font-black"
+            key={org.id || org.slug || org.name}
+            href={`https://github.com/${org.slug}`}
+            className="flex items-center gap-3 p-3 bg-white dark:bg-[#151411] border-2 border-black dark:border-[#2e2924] rounded-xl shadow-card-sm hover:-translate-y-0.5 transition-transform"
           >
             <OptimizedImage
               src={normalizeImageUrl(
@@ -135,14 +134,13 @@ const OrganizationsGrid: React.FC = () => {
               className="w-8 h-8 rounded-lg object-cover border border-black/20"
             />
             <div className="truncate min-w-0">
-              <div className="font-bold text-xs truncate uppercase tracking-tight">
+              <div className="font-bold text-xs truncate uppercase tracking-tight dark:text-white">
                 {org.name}
               </div>
-              <div className="text-[10px] text-muted truncate">GitHub</div>
+              <div className="text-[10px] text-muted dark:text-slate-300 truncate">GitHub</div>
             </div>
-           </div>
           </a>
-        </p>
+        ))}
       </div>
     </div>
   );

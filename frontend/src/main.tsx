@@ -47,22 +47,24 @@ const GOOGLE_CLIENT_ID =
   import.meta.env.VITE_GOOGLE_CLIENT_ID ||
   "27042928964-pbolsldqvdv2hfipblmrcf332evg83v8.apps.googleusercontent.com";
 
-// Register Service Worker
+import { registerSW } from "virtual:pwa-register";
+
+// Register Service Worker with prompt-based update flow
 if (typeof window !== "undefined" && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register(import.meta.env.DEV ? "/dev-sw.js?dev-sw" : "/sw.js", {
-        type: import.meta.env.DEV ? "module" : "classic",
-      })
-      .then((registration) => {
-        console.log(
-          "[ServiceWorker] Registered with scope:",
-          registration.scope,
+    const updateSW = registerSW({
+      onNeedRefresh() {
+        console.log("[ServiceWorker] New update available — prompting user.");
+        window.dispatchEvent(
+          new CustomEvent("pwa-need-refresh", {
+            detail: { updateSW },
+          }),
         );
-      })
-      .catch((error) => {
-        console.error("[ServiceWorker] Registration failed:", error);
-      });
+      },
+      onOfflineReady() {
+        console.log("[ServiceWorker] App ready to work offline.");
+      },
+    });
   });
 }
 

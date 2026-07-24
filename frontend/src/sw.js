@@ -58,12 +58,31 @@ const DB_VERSION = 2;
 
 self.addEventListener("install", (event) => {
   console.log("[ServiceWorker] Installed");
-  event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener("activate", (event) => {
   console.log("[ServiceWorker] Activated");
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    (async () => {
+      const windowClients = await self.clients.matchAll({ type: "window" });
+      const hasActiveSession = windowClients.some((client) => {
+        return (
+          client.url.includes("/sandbox") ||
+          client.url.includes("/lessons") ||
+          client.url.includes("/challenges") ||
+          client.url.includes("/chat")
+        );
+      });
+
+      if (hasActiveSession) {
+        console.log(
+          "[ServiceWorker] Active session detected, delaying client claim...",
+        );
+        await new Promise((resolve) => setTimeout(resolve, 60000));
+      }
+      await self.clients.claim();
+    })(),
+  );
 });
 
 self.addEventListener("sync", (event) => {
@@ -75,7 +94,9 @@ self.addEventListener("sync", (event) => {
 
 self.addEventListener("message", (event) => {
   console.log("[ServiceWorker] Message received:", event.data);
-  if (event.data && event.data.type === "TRIGGER_SYNC") {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  } else if (event.data && event.data.type === "TRIGGER_SYNC") {
     event.waitUntil(syncProgressQueue());
   }
 });

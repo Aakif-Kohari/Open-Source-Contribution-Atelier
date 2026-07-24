@@ -79,25 +79,16 @@ SECURE_HSTS_PRELOAD = os.getenv(
 ).lower() in {"1", "true", "yes", "on"}
 
 # Restrictive default Content Security Policy.
-# Allow jsDelivr because the API documentation UI loads its assets from there.
-CONTENT_SECURITY_POLICY = os.getenv(
-    "CONTENT_SECURITY_POLICY",
-    (
-        "default-src 'self'; "
-        "base-uri 'self'; "
-        "object-src 'none'; "
-        "frame-ancestors 'none'; "
-        "form-action 'self'; "
-        "script-src 'self' https://cdn.jsdelivr.net; "
-        "style-src 'self' https://cdn.jsdelivr.net; "
-        "img-src 'self' data: blob: http: https: https://cdn.jsdelivr.net; "
-        "font-src 'self' data: https://cdn.jsdelivr.net; "
-        "connect-src 'self'; "
-        "media-src 'self'; "
-        "worker-src 'self'; "
-        "manifest-src 'self'; "
-        "upgrade-insecure-requests"
-    ),
+CONTENT_SECURITY_POLICY = (
+    "default-src 'self'; "
+    "script-src 'self' https://cdn.jsdelivr.net; "
+    "style-src 'self' https://cdn.jsdelivr.net; "
+    "img-src 'self' data: blob: https://*.amazonaws.com; "
+    "connect-src 'self' wss://localhost:* wss://*.vercel.app; "
+    "font-src 'self' https://cdn.jsdelivr.net; "
+    "frame-ancestors 'none'; "
+    "base-uri 'self'; "
+    "form-action 'self'; "
 )
 
 TESTING = "test" in sys.argv or "pytest" in sys.modules
@@ -546,6 +537,7 @@ INSTALLED_APPS += [
     "channels",
     "apps.notifications.apps.NotificationsConfig",
     "apps.dashboard.apps.DashboardConfig",
+    "apps.predictions.apps.PredictionsConfig",
     "apps.chat.apps.ChatConfig",
     "django.contrib.postgres",
     "apps.search.apps.SearchConfig",
@@ -569,6 +561,7 @@ CONTENT_SECURITY_POLICY = {
         "data:",
     ],
 }
+
 
 # ──────────────────────────────────────────
 # Redis / Channels (graceful fallback when Redis is down)

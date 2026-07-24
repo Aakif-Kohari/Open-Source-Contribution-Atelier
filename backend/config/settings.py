@@ -3,8 +3,9 @@ import os
 import sys
 from datetime import timedelta
 from pathlib import Path
-import stripe
+
 import dj_database_url
+import stripe
 
 # pyrefly: ignore [missing-import]
 from django.core.exceptions import ImproperlyConfigured
@@ -93,11 +94,15 @@ CONTENT_SECURITY_POLICY = (
 
 TESTING = "test" in sys.argv or "pytest" in sys.modules
 
-ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
-    if host.strip()
-]
+_raw_hosts = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = [host.strip() for host in _raw_hosts if host.strip()]
+
+if not DEBUG and "*" in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.remove("*")
+
+_render_host = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+if _render_host and _render_host not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(_render_host)
 
 if not DEBUG and not TESTING and not ALLOWED_HOSTS:
     from django.core.exceptions import ImproperlyConfigured

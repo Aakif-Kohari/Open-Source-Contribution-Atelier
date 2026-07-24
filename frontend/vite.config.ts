@@ -14,6 +14,19 @@ const dirname =
     : path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+  server: {
+    host: true,
+    port: 5173,
+    strictPort: true,
+    ...(process.env.DOCKER === "true" && {
+      hmr: {
+        clientPort: 5173,
+      },
+      watch: {
+        usePolling: true,
+      },
+    }),
+  },
   build: {
     sourcemap: "hidden",
   },
@@ -40,7 +53,7 @@ export default defineConfig({
       strategies: "injectManifest",
       srcDir: "src",
       filename: "sw.js",
-      registerType: "autoUpdate",
+      registerType: "prompt",
       injectManifest: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,json,md}"],
         maximumFileSizeToCacheInBytes: 7 * 1024 * 1024,

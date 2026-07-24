@@ -1,6 +1,8 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { useAppDispatch } from "../store/hooks";
 
 import { AppRouter } from "./router";
 import { queryClient } from "../lib/queryClient";
@@ -12,7 +14,12 @@ import { WebSocketStatusIndicator } from "../components/WebSocketStatus/WebSocke
 import { CustomCursor } from "../components/CustomCursor";
 import { OfflineBanner } from "../components/ui/OfflineBanner";
 import { InstallAppBanner } from "../components/ui/InstallAppBanner";
+import { UpdateAvailableBanner } from "../components/ui/UpdateAvailableBanner";
 import { ConflictResolutionModal } from "../components/ui/ConflictResolutionModal";
+
+// ✅ Import BackToTop Component
+import BackToTop from "../components/BackToTop";
+
 // Pure React Onboarding Tour Step Definition Type Map
 interface TourStep {
   target: string;
@@ -48,6 +55,16 @@ const TOUR_STEPS: TourStep[] = [
 ];
 
 export function App({ children }: { children?: React.ReactNode }) {
+  const location = useLocation();
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    dispatch({
+      type: "LOCATION_CHANGE",
+      payload: { pathname: location.pathname },
+    });
+  }, [location.pathname, dispatch]);
+
   const [currentStep, setCurrentStep] = useState<number>(-1);
   const [coords, setCoords] = useState<{
     top: number;
@@ -139,6 +156,7 @@ export function App({ children }: { children?: React.ReactNode }) {
             </a>
             <OfflineBanner />
             <InstallAppBanner />
+            <UpdateAvailableBanner />
             <ConflictResolutionModal />
             {/* Global Toast Configuration */}
             <Toaster
@@ -160,6 +178,13 @@ export function App({ children }: { children?: React.ReactNode }) {
             <ReportIssueButton />
             <CustomCursor />
             <WebSocketStatusIndicator url="" />
+
+            {/* ✅ Back to Top Button - Appears on all pages */}
+            <BackToTop 
+              threshold={300} 
+              behavior="smooth"
+              showProgress={true}
+            />
 
             {/* Pure React Onboarding Modals Highlight Tour Overlay Portal */}
             {currentStep >= 0 && coords && (

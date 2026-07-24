@@ -112,36 +112,6 @@ const OrganizationsGrid: React.FC = () => {
           ))}
         </div>
       </div>
-
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-3">
-        {organizations.map((org) => (
-          <a
-            key={org.id || org.slug || org.name}
-            href={`https://github.com/${org.slug}`}
-            className="flex items-center gap-3 p-3 bg-white dark:bg-[#151411] border-2 border-black dark:border-[#2e2924] rounded-xl shadow-card-sm hover:-translate-y-0.5 transition-transform"
-          >
-            <OptimizedImage
-              src={normalizeImageUrl(
-                org.logo_url ||
-                  org.logoUrl ||
-                  `https://github.com/${org.slug}.png?size=80`,
-                API_BASE,
-              )}
-              alt={`${org.name} avatar`}
-              width={32}
-              height={32}
-              loading="eager"
-              className="w-8 h-8 rounded-lg object-cover border border-black/20"
-            />
-            <div className="truncate min-w-0">
-              <div className="font-bold text-xs truncate uppercase tracking-tight dark:text-white">
-                {org.name}
-              </div>
-              <div className="text-[10px] text-muted dark:text-slate-300 truncate">GitHub</div>
-            </div>
-          </a>
-        ))}
-      </div>
     </div>
   );
 };

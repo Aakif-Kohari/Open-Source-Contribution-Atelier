@@ -112,38 +112,6 @@ const OrganizationsGrid: React.FC = () => {
           ))}
         </div>
       </div>
-
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-3">
-      <div className="org-card coming-soon">
-      
-        {organizations.map((org) => (
-          <a
-            href="mailto:partners@atelier.dev"
-            className="text-black hover:underline transition font-black"
-          >
-            <OptimizedImage
-              src={normalizeImageUrl(
-                org.logo_url ||
-                  org.logoUrl ||
-                  `https://github.com/${org.slug}.png?size=80`,
-                API_BASE,
-              )}
-              alt={`${org.name} avatar`}
-              width={32}
-              height={32}
-              loading="eager"
-              className="w-8 h-8 rounded-lg object-cover border border-black/20"
-            />
-            <div className="truncate min-w-0">
-              <div className="font-bold text-xs truncate uppercase tracking-tight">
-                {org.name}
-              </div>
-              <div className="text-[10px] text-muted truncate">GitHub</div>
-            </div>
-           </div>
-          </a>
-        </p>
-      </div>
     </div>
   );
 };

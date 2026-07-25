@@ -21,8 +21,8 @@ def get_redis_client():
                 socket_timeout=0.2,
                 decode_responses=True,
             )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Caught exception: %s", e)
     return None
 
 

@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Lock,
   Bookmark,
+  AlertTriangle,
 } from "lucide-react";
 
 import SkeletonLesson from "../components/ui/skeletons/SkeletonLesson";
@@ -69,6 +70,7 @@ export function LessonPage() {
   const [lessonsList, setLessonsList] = useState<Lesson[]>([]);
   const [markdownContent, setMarkdownContent] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Curriculum modules list for sidebar
   const [modules, setModules] = useState<
@@ -178,6 +180,7 @@ export function LessonPage() {
   // 1. Fetch modules catalog & lessons
   useEffect(() => {
     setIsLoading(true);
+    setError(null);
 
     const curriculumPromise = fetch("/content/curriculum.json")
       .then((res) => {
@@ -241,7 +244,10 @@ export function LessonPage() {
       })
       .catch((err) => {
         console.error("[LessonPage] Unexpected error loading lesson:", err);
-        navigate("/dashboard", { replace: true });
+        setError(
+          err?.message ||
+            "Something went wrong while loading the lesson. Please try again.",
+        );
       })
       .finally(() => {
         setIsLoading(false);
@@ -426,6 +432,49 @@ export function LessonPage() {
       >
         <div className="w-full max-w-3xl">
           <SkeletonLesson />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div
+        className="pt-20 h-screen w-full flex items-center justify-center p-6"
+        role="alert"
+        aria-live="assertive"
+      >
+        <div className="w-full max-w-md rounded-2xl border-4 border-black bg-white dark:bg-[#1f1c18] dark:border-[#2e2924] p-8 shadow-[6px_6px_0px_#000] flex flex-col items-center gap-6 text-center">
+          <div className="flex items-center justify-center w-16 h-16 rounded-full bg-red-100 border-4 border-red-600">
+            <AlertTriangle size={32} className="text-red-600" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-black text-text dark:text-[#f0ebe2] mb-2">
+              Failed to Load Lesson
+            </h2>
+            <p className="text-sm font-bold text-muted dark:text-[#c4bbae] break-words">
+              {error}
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
+            <button
+              onClick={() => {
+                setError(null);
+                setIsLoading(true);
+                // Re-trigger by bumping slug-based effect via navigate
+                navigate(0);
+              }}
+              className="flex-1 px-5 py-3 bg-primary text-black font-black text-sm rounded-xl border-4 border-black shadow-[3px_3px_0px_#000] hover:-translate-y-0.5 active:translate-y-0.5 transition-all"
+            >
+              🔄 Retry
+            </button>
+            <Link
+              to="/dashboard"
+              className="flex-1 px-5 py-3 bg-surface-low text-text dark:text-[#f0ebe2] font-black text-sm rounded-xl border-4 border-black shadow-[3px_3px_0px_#000] hover:-translate-y-0.5 active:translate-y-0.5 transition-all text-center"
+            >
+              ← Go Back
+            </Link>
+          </div>
         </div>
       </div>
     );

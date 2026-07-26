@@ -72,14 +72,21 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.close(code=4002)
             return
 
+
         user_id = getattr(user, "pk", getattr(user, "id", None))
+
+
 
         if room_id.startswith("dm_"):
             parts = room_id.split("_")
             if len(parts) == 3:
                 try:
                     u1, u2 = int(parts[1]), int(parts[2])
+
                     if user_id not in [u1, u2]:
+
+                     if self.user.id not in [u1, u2]:
+
                         logger.warning("WS Chat rejected: unauthorized DM access")
                         await self.close(code=4003)
                         return
@@ -140,8 +147,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 self.group_name,
                 {
                     "type": "presence_joined",
+
                     "username": getattr(self.user, "username", ""),
                     "user_id": user_id,
+
+                    "username": self.user.username,
+                    "user_id": self.user.id,
+
                 },
             )
 
@@ -150,10 +162,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
         qs = Message.objects.filter(room_id=self.room_id).order_by("-created_at")[:50]
         return [
             {
+
                 "id": getattr(m, "id", None),
                 "parent_id": getattr(m, "parent_id", None),
                 "username": getattr(m.user, "username", ""),
                 "user_id": getattr(m.user, "pk", getattr(m.user, "id", None)),
+
+                "id": m.id, # type: ignore
+                "parent_id": m.parent,
+                "username": m.user.username,
+                "user_id": m.user.id, # type: ignore
+
                 "content": m.content,
                 "created_at": m.created_at.isoformat(),
             }
@@ -182,8 +201,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     self.group_name,
                     {
                         "type": "presence_left",
+
                         "username": username,
                         "user_id": user_id,
+
+                        "username": self.user.username,
+                        "user_id": self.user.id,
+
                     },
                 )
             await self.channel_layer.group_send(
@@ -331,7 +355,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             parent_id = data.get("parent_id")
             if content:
                 is_allowed = await self.check_rate_limit(
-                    f"throttle_chat_ws_{user_id}", 30, 60
+                    f"throttle_chat_ws_{self.user.id}", 30, 60
                 )
                 if not is_allowed:
                     await self.send(
@@ -351,10 +375,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     self.group_name,
                     {
                         "type": "chat_message",
-                        "id": getattr(msg, "id", None),
-                        "parent_id": getattr(msg, "parent_id", None),
-                        "username": username,
-                        "user_id": user_id,
+                        "id": msg.id,  # type: ignore
+                        "parent_id": msg.parent,
+                        "username": self.user.username,
+                        "user_id": self.user.id,
                         "message": content,
                         "created_at": msg.created_at.isoformat(),
                         "sender_channel": self.channel_name,
@@ -424,4 +448,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "user_id": event["user_id"],
                 }
             )
+
         )
+

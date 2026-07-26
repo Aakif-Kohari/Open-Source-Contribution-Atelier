@@ -17,6 +17,7 @@ import time
 from typing import Tuple
 
 from django.conf import settings as django_settings
+
 from django.core.cache import cache
 from rest_framework.throttling import SimpleRateThrottle
 
@@ -100,6 +101,8 @@ class RedisLuaRateLimiter:
 
         return allowed, current_count, ttl_remaining
 
+from apps.core.throttling import SlidingWindowAnonThrottle
+
 
 def _get_real_ip(request) -> str:
     """
@@ -117,14 +120,19 @@ def _get_real_ip(request) -> str:
     return request.META.get("REMOTE_ADDR", "")
 
 
+
 class BaseDistributedThrottle(SimpleRateThrottle):
     """
     Base throttle that uses Redis Lua scripting when settings.RATE_LIMIT_BACKEND == "redis".
     Falls back to local cache implementation if "local" or when Redis is down.
     """
 
-    num_requests: int
-    duration: int
+class _ProxyAwareThrottle(SlidingWindowAnonThrottle): # type: ignore
+    """Base class that uses the proxy-aware IP resolver for cache keys."""
+
+
+    num_requests: int # type: ignore
+    duration: int # type: ignore
 
     def allow_request(self, request, view):
         if self.rate is None:
@@ -215,7 +223,7 @@ class _ProxyAwareThrottle(AnonRateThrottle):
         return _get_real_ip(request)
 
 
-class StrictIdentityLoginThrottle(AnonRateThrottle):
+class StrictIdentityLoginThrottle(SlidingWindowAnonThrottle):
     scope = "auth_login"
 
     def get_ident(self, request):
@@ -245,7 +253,7 @@ class OtpVerifyThrottle(_ProxyAwareThrottle):
     scope = "auth_otp_verify"
 
 
-class StrictIdentityPasswordResetThrottle(AnonRateThrottle):
+class StrictIdentityPasswordResetThrottle(SlidingWindowAnonThrottle):
     scope = "auth_password_reset"
 
     def get_ident(self, request):
@@ -263,7 +271,7 @@ class MagicLinkRequestThrottle(_ProxyAwareThrottle):
     scope = "auth_magic_link_request"
 
 
-class StrictIdentityMagicLinkThrottle(AnonRateThrottle):
+class StrictIdentityMagicLinkThrottle(SlidingWindowAnonThrottle):
     scope = "auth_magic_link_request"
 
     def get_ident(self, request):

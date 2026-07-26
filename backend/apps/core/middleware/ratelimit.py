@@ -9,6 +9,7 @@ from django.utils.deprecation import MiddlewareMixin
 
 logger = logging.getLogger(__name__)
 
+
 LUA_RATE_LIMIT_SCRIPT = """
 local key = KEYS[1]
 local window = tonumber(ARGV[1])
@@ -31,10 +32,12 @@ _LUA_SHA = None
 
 
 def get_redis_client():
+    # Attempt to use raw redis client for ZSET operations (sliding window log).
     try:
         redis_url = getattr(settings, "REDIS_URL", None) or getattr(
             settings, "RATE_LIMIT_REDIS_URL", None
         )
+
         if redis_url:
             return redis.from_url(
                 redis_url,
@@ -49,7 +52,11 @@ def get_redis_client():
 
 class RateLimitMiddleware(MiddlewareMixin):
     """
+
     Distributed rate limiting middleware using Redis Lua scripting or local cache fallback.
+
+    Distributed rate limiting middleware using Redis (Sliding Window Log).
+
     """
 
     def __init__(self, get_response):
@@ -69,6 +76,9 @@ class RateLimitMiddleware(MiddlewareMixin):
         if request.path.startswith("/api/webhooks/"):
             return None
 
+
+       # Bypass for admin, static, etc.
+
         if request.path.startswith(("/admin/", "/static/", "/health/", "/media/")):
             return None
 
@@ -87,14 +97,22 @@ class RateLimitMiddleware(MiddlewareMixin):
 
         cache_key = f"ratelimit:{identifier}"
 
+
         allowed, remaining, ttl = self._check_rate_limit(cache_key, limit, self.window)
 
         reset_val = ttl if (ttl is not None and ttl > 0) else self.window
 
+        allowed, remaining = self._check_rate_limit(cache_key, limit, self.window)
+
+
         request._rate_limit_info = {
             "limit": limit,
             "remaining": remaining,
+
             "reset": reset_val,
+
+            "reset": self.window,
+
         }
 
         if not allowed:
@@ -106,7 +124,11 @@ class RateLimitMiddleware(MiddlewareMixin):
                 },
                 status=429,
             )
+
             response["Retry-After"] = str(reset_val)
+
+            response["Retry-After"] = str(self.window)
+
             return response
 
         return None
@@ -119,9 +141,15 @@ class RateLimitMiddleware(MiddlewareMixin):
             response["X-RateLimit-Remaining"] = str(info["remaining"])
             response["X-RateLimit-Reset"] = str(int(time.time() + reset_secs))
 
+            response["X-RateLimit-Limit"] = str(info["limit"])
+            response["X-RateLimit-Remaining"] = str(info["remaining"])
+            response["X-RateLimit-Reset"] = str(int(time.time() + info["reset"]))
+
+
         return response
 
     def _check_rate_limit(self, key, limit, window):
+
         backend = getattr(settings, "RATE_LIMIT_BACKEND", "local").lower()
 
         if backend == "redis" and self.redis_client:
@@ -166,3 +194,44 @@ class RateLimitMiddleware(MiddlewareMixin):
         except Exception as e:
             logger.error(f"Rate limiter failed open: {e}")
             return True, limit, window
+
+        if self.redis_client:
+            try:
+                now = time.time()
+                window_start = now - window
+
+                pipe = self.redis_client.pipeline()
+                pipe.zremrangebyscore(key, 0, window_start)
+                pipe.zcard(key)
+                pipe.zadd(key, {str(now): now})
+                pipe.expire(key, window)
+                results = pipe.execute()
+
+                current_count = results[1]
+
+                if current_count >= limit:
+                    # Reject request, remove the just-added token
+                    self.redis_client.zrem(key, str(now))
+                    return False, 0
+
+                remaining = max(0, limit - (current_count + 1))
+                return True, remaining
+            except Exception as e:
+                logger.warning(f"Rate limit redis error, falling back to basic: {e}")
+                pass
+
+        # Fallback to basic fixed-window via Django cache
+        try:
+            current = cache.get(key, 0)
+            if current >= limit:
+                return False, 0
+            if current == 0:
+                cache.set(key, 1, window)
+                return True, limit - 1
+            else:
+                current = cache.incr(key)
+                return True, max(0, limit - current)
+        except Exception as e:
+            logger.error(f"Rate limiter failed open: {e}")
+            return True, limit
+

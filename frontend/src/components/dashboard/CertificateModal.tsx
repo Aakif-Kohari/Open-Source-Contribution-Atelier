@@ -76,10 +76,14 @@ export function CertificateModal({
 
         {/* Bound layout wrapper targeting DOM elements for capture structure conversion */}
 <<<<<<< HEAD
+<<<<<<< HEAD
         <div 
 =======
         <div
 >>>>>>> dfdebfe7240e0a2925844a3a06c0bf827e540a66
+=======
+        <div
+>>>>>>> origin/main
           ref={certificateRef}
           className="space-y-6 w-full border-4 border-dashed border-black/35 rounded-2xl p-6 sm:p-10 relative bg-[#FFF9F0]"
         >
@@ -163,15 +167,21 @@ export function CertificateModal({
             className="flex items-center gap-2 rounded-lg bg-amber-400 text-black border-4 border-black px-5 py-2.5 font-black text-sm shadow-card-sm hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-card-sm cursor-pointer disabled:opacity-60"
           >
 <<<<<<< HEAD
+<<<<<<< HEAD
             {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Image size={16} />} Download PNG
 =======
+=======
+>>>>>>> origin/main
             {isExporting ? (
               <Loader2 size={16} className="animate-spin" />
             ) : (
               <Image size={16} />
             )}{" "}
             Download PNG
+<<<<<<< HEAD
 >>>>>>> dfdebfe7240e0a2925844a3a06c0bf827e540a66
+=======
+>>>>>>> origin/main
           </button>
 
           <button
@@ -180,15 +190,21 @@ export function CertificateModal({
             className="flex items-center gap-2 rounded-lg bg-teal-400 text-black border-4 border-black px-5 py-2.5 font-black text-sm shadow-card-sm hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-card-sm cursor-pointer disabled:opacity-60"
           >
 <<<<<<< HEAD
+<<<<<<< HEAD
             {isExporting ? <Loader2 size={16} className="animate-spin" /> : <FileImage size={16} />} Download SVG
 =======
+=======
+>>>>>>> origin/main
             {isExporting ? (
               <Loader2 size={16} className="animate-spin" />
             ) : (
               <FileImage size={16} />
             )}{" "}
             Download SVG
+<<<<<<< HEAD
 >>>>>>> dfdebfe7240e0a2925844a3a06c0bf827e540a66
+=======
+>>>>>>> origin/main
           </button>
 
           {certificateData?.certificate?.verification_hash && (

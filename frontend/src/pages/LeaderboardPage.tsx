@@ -11,12 +11,13 @@ import {
   Star,
   Flame,
   Sparkles,
+  X,
 } from "lucide-react";
 import { useAuth } from "../features/auth/AuthContext";
 import { ResponsiveTable } from "../components/ui/ResponsiveTable";
 import { motion, AnimatePresence } from "framer-motion";
 
-type TimePeriod = "all_time" | "weekly" | "monthly" | "seasonal";
+type TimePeriod = "all_time" | "weekly" | "monthly" | "seasonal" | string;
 
 export function LeaderboardPage() {
   const { user } = useAuth();
@@ -25,6 +26,14 @@ export function LeaderboardPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("all_time");
+
+  // ============================================
+  // ✅ CLEAR SEARCH FUNCTION (Issue #1965)
+  // ============================================
+  const clearSearch = useCallback(() => {
+    setSearch("");
+    setDebouncedSearch("");
+  }, []);
 
   // Debounce search
   useEffect(() => {
@@ -149,6 +158,7 @@ export function LeaderboardPage() {
 
   const timePeriods: { id: TimePeriod; label: string; icon: any }[] = [
     { id: "all_time", label: "All Time", icon: Crown },
+    { id: "cohort_summer_2026", label: "Summer '26 Cohort", icon: Sparkles },
     { id: "seasonal", label: "Season 1", icon: Sparkles },
     { id: "monthly", label: "Monthly", icon: Star },
     { id: "weekly", label: "Weekly", icon: Flame },
@@ -164,6 +174,13 @@ export function LeaderboardPage() {
         return "text-[#CD7F32] bg-[#CD7F32]/10 border-[#CD7F32]/30 shadow-[#CD7F32]/20";
       default:
         return "text-muted bg-surface-low border-transparent shadow-none dark:text-[#c4bbae]";
+    }
+  };
+
+  // ===== HANDLE ENTER KEY =====
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      clearSearch();
     }
   };
 
@@ -224,15 +241,38 @@ export function LeaderboardPage() {
               {totalUsers.toLocaleString()}
             </span>
           </div>
+
+          {/* ===== SEARCH INPUT WITH CLEAR BUTTON (Issue #1965) ===== */}
           <div className="relative flex-1 xl:w-80 group">
+            <label htmlFor="leaderboard-search-input" className="sr-only">
+              Search by username
+            </label>
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted dark:text-[#8a8377] group-focus-within:text-indigo-500 transition-colors" />
+            
             <input
+              id="leaderboard-search-input"
               type="text"
               placeholder="Search by username..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-white dark:bg-[#111] border-2 border-black/10 dark:border-white/10 pl-12 pr-4 py-3 rounded-2xl text-sm font-black text-text dark:text-white focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 transition-all shadow-inner"
+              onKeyDown={handleKeyDown}
+              className="w-full bg-white dark:bg-[#111] border-2 border-black/10 dark:border-white/10 pl-12 pr-12 py-3 rounded-2xl text-sm font-black text-text dark:text-white focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 transition-all shadow-inner"
+              aria-label="Search contributors by username"
             />
+
+            {/* ✅ CLEAR BUTTON */}
+            {search && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 group/clear"
+                aria-label="Clear search"
+                title="Clear search"
+              >
+                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-600 hover:text-slate-700 dark:hover:text-slate-300 transition-all duration-200 group-hover/clear:scale-110 active:scale-95">
+                  <X className="w-4 h-4" />
+                </span>
+              </button>
+            )}
           </div>
         </div>
       </div>

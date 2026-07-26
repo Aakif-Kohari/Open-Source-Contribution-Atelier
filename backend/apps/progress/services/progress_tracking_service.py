@@ -4,6 +4,7 @@ from django.utils import timezone
 from django_q.tasks import async_task
 
 from apps.progress.models import (
+    DailyActivity,
     LessonProgress,
     LessonProgressSync,
     XPEvent,
@@ -31,7 +32,10 @@ class ProgressTrackingService:
         Records or updates a user's progress for a specific lesson.
         Returns a tuple: (LessonProgress instance, created boolean, idempotency_hit boolean).
         """
-        multiplier = XPMultiplierEvent.get_active_multiplier()
+        from apps.progress.services.milestone_track_service import MilestoneTrackService
+
+        season_mult = MilestoneTrackService.get_active_season_multiplier(user, "lesson")
+        multiplier = XPMultiplierEvent.get_active_multiplier() * season_mult
         organization = getattr(user, "organization", None)
 
         lesson = LessonService.get_lesson_by_slug(lesson_slug, organization)
@@ -136,6 +140,13 @@ class ProgressTrackingService:
                 )
             )
 
+            if completed:
+                DailyActivity.log_and_update_streak(
+                    user=user,
+                    date=timezone.now().date(),
+                    activity_type="lesson",
+                )
+
         return progress, created, False
 
     @staticmethod
@@ -143,7 +154,10 @@ class ProgressTrackingService:
         """
         Synchronizes multiple lessons' progress for a user.
         """
-        multiplier = XPMultiplierEvent.get_active_multiplier()
+        from apps.progress.services.milestone_track_service import MilestoneTrackService
+
+        season_mult = MilestoneTrackService.get_active_season_multiplier(user, "lesson")
+        multiplier = XPMultiplierEvent.get_active_multiplier() * season_mult
         organization = getattr(user, "organization", None)
         synced_ids = []
 

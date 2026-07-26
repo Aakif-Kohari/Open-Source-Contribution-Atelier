@@ -4,8 +4,10 @@ import logging
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
+from django.conf import settings
 from django.core.cache import cache
 
+from apps.accounts.throttles import RedisLuaRateLimiter  # type: ignore
 from .models import Message
 
 logger = logging.getLogger(__name__)
@@ -18,6 +20,41 @@ class ChatConsumer(AsyncWebsocketConsumer):
     URL pattern:  ws://host/ws/chat/<room_id>/ ?token=<JWT>
     """
 
+    async def check_rate_limit(
+        self, key: str, max_requests: int = 30, window_seconds: int = 60
+    ) -> bool:
+        backend = getattr(settings, "RATE_LIMIT_BACKEND", "local").lower()
+
+        if backend == "redis":
+            try:
+                limiter = RedisLuaRateLimiter(
+                    key=key,
+                    max_requests=max_requests,
+                    window_seconds=window_seconds,
+                )
+                allowed, _, _ = limiter.check()
+                return allowed
+            except Exception as e:
+                logger.warning(
+                    f"Chat WS Redis Lua throttling failed ({e}), falling back to local cache."
+                )
+
+        try:
+            current = cache.get(key, 0)
+            if current >= max_requests:
+                return False
+            if current == 0:
+                cache.set(key, 1, window_seconds)
+            else:
+                try:
+                    cache.incr(key)
+                except ValueError:
+                    cache.set(key, current + 1, window_seconds)
+            return True
+        except Exception as e:
+            logger.error(f"Chat WS rate limiter failed open: {e}")
+            return True
+
     async def connect(self):
         user = self.scope.get("user")
 
@@ -26,11 +63,29 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.close(code=4001)
             return
 
-        room_id = self.scope["url_route"]["kwargs"].get("room_id")
+        url_route = self.scope.get("url_route", {})
+        kwargs = url_route.get("kwargs", {}) if url_route else {}
+        room_id = kwargs.get("room_id")
+
         if not room_id:
             logger.warning("WS Chat rejected: missing room_id")
             await self.close(code=4002)
             return
+
+        user_id = getattr(user, "pk", getattr(user, "id", None))
+
+        if room_id.startswith("dm_"):
+            parts = room_id.split("_")
+            if len(parts) == 3:
+                try:
+                    u1, u2 = int(parts[1]), int(parts[2])
+                    if user_id not in [u1, u2]:
+                        logger.warning("WS Chat rejected: unauthorized DM access")
+                        await self.close(code=4003)
+                        return
+                except ValueError:
+                    await self.close(code=4002)
+                    return
 
         self.user = user
         self.room_id = room_id
@@ -40,14 +95,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
-        logger.info("WS Chat connected: user=%s room=%s", self.user.id, self.room_id)
+        logger.info("WS Chat connected: user=%s room=%s", user_id, self.room_id)
 
         await self.send(
             text_data=json.dumps(
                 {
                     "type": "connection_established",
                     "room_id": self.room_id,
-                    "user_id": self.user.id,
+                    "user_id": user_id,
                 }
             )
         )
@@ -58,6 +113,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 text_data=json.dumps(
                     {
                         "type": "new_message",
+                        "id": msg["id"],
+                        "parent_id": msg["parent_id"],
                         "username": msg["username"],
                         "user_id": msg["user_id"],
                         "message": msg["content"],
@@ -66,7 +123,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 )
             )
 
-        # Presence synchronization
         is_new = await self.add_user_to_presence()
         online_users = await self.get_online_users()
 
@@ -84,9 +140,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 self.group_name,
                 {
                     "type": "presence_joined",
-                    "username": self.user.username,
-                    "user_id": self.user.id,
-                }
+                    "username": getattr(self.user, "username", ""),
+                    "user_id": user_id,
+                },
             )
 
     @database_sync_to_async
@@ -94,8 +150,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         qs = Message.objects.filter(room_id=self.room_id).order_by("-created_at")[:50]
         return [
             {
-                "username": m.user.username,
-                "user_id": m.user.id,
+                "id": getattr(m, "id", None),
+                "parent_id": getattr(m, "parent_id", None),
+                "username": getattr(m.user, "username", ""),
+                "user_id": getattr(m.user, "pk", getattr(m.user, "id", None)),
                 "content": m.content,
                 "created_at": m.created_at.isoformat(),
             }
@@ -103,32 +161,38 @@ class ChatConsumer(AsyncWebsocketConsumer):
         ]
 
     @database_sync_to_async
-    def save_message(self, user, room_id, content):
-        return Message.objects.create(user=user, room_id=room_id, content=content)
+    def save_message(self, user, room_id, content, parent_id=None):
+        return Message.objects.create(
+            user=user, room_id=room_id, content=content, parent_id=parent_id
+        )
 
-    async def disconnect(self, close_code):
+    async def disconnect(self, code):
         if getattr(self, "typing_timeout_task", None):
-            self.typing_timeout_task.cancel()
+            task = self.typing_timeout_task
+            if task:
+                task.cancel()
 
         is_gone = await self.remove_user_from_presence()
+        user_id = getattr(self.user, "pk", getattr(self.user, "id", None))
+        username = getattr(self.user, "username", "")
+
         if hasattr(self, "group_name"):
             if is_gone:
                 await self.channel_layer.group_send(
                     self.group_name,
                     {
                         "type": "presence_left",
-                        "username": self.user.username,
-                        "user_id": self.user.id,
-                    }
+                        "username": username,
+                        "user_id": user_id,
+                    },
                 )
-            # Automatically clear typing state on disconnect
             await self.channel_layer.group_send(
                 self.group_name,
                 {
                     "type": "user_typing",
                     "action": "typing_stop",
-                    "username": self.user.username,
-                    "user_id": self.user.id,
+                    "username": username,
+                    "user_id": user_id,
                     "sender_channel": self.channel_name,
                 },
             )
@@ -136,17 +200,21 @@ class ChatConsumer(AsyncWebsocketConsumer):
             logger.info(
                 "WS Chat disconnected: group=%s code=%s",
                 self.group_name,
-                close_code,
+                code,
             )
 
     @database_sync_to_async
     def add_user_to_presence(self):
         key = f"chat_presence_{self.room_id}"
         users = cache.get(key, {})
-        uid_str = str(self.user.id)
+        user_id = getattr(self.user, "pk", getattr(self.user, "id", None))
+        uid_str = str(user_id)
         is_new = False
         if uid_str not in users:
-            users[uid_str] = {"username": self.user.username, "count": 1}
+            users[uid_str] = {
+                "username": getattr(self.user, "username", ""),
+                "count": 1,
+            }
             is_new = True
         else:
             users[uid_str]["count"] += 1
@@ -157,7 +225,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def remove_user_from_presence(self):
         key = f"chat_presence_{self.room_id}"
         users = cache.get(key, {})
-        uid_str = str(self.user.id)
+        user_id = getattr(self.user, "pk", getattr(self.user, "id", None))
+        uid_str = str(user_id)
         is_gone = False
         if uid_str in users:
             users[uid_str]["count"] -= 1
@@ -171,18 +240,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def get_online_users(self):
         key = f"chat_presence_{self.room_id}"
         users = cache.get(key, {})
-        return [{"user_id": int(uid), "username": info["username"]} for uid, info in users.items()]
+        return [
+            {"user_id": int(uid), "username": info["username"]}
+            for uid, info in users.items()
+        ]
 
     async def clear_typing_state(self):
         try:
-            await asyncio.sleep(4)  # Short timeout to clear typing state
+            await asyncio.sleep(4)
+            user_id = getattr(self.user, "pk", getattr(self.user, "id", None))
             await self.channel_layer.group_send(
                 self.group_name,
                 {
                     "type": "user_typing",
                     "action": "typing_stop",
-                    "username": self.user.username,
-                    "user_id": self.user.id,
+                    "username": getattr(self.user, "username", ""),
+                    "user_id": user_id,
                     "sender_channel": self.channel_name,
                 },
             )
@@ -197,10 +270,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return
 
         action = data.get("action")
+        user_id = getattr(self.user, "pk", getattr(self.user, "id", None))
+        username = getattr(self.user, "username", "")
 
         if action == "typing_start":
             if getattr(self, "typing_timeout_task", None):
-                self.typing_timeout_task.cancel()
+                task = self.typing_timeout_task
+                if task:
+                    task.cancel()
             self.typing_timeout_task = asyncio.create_task(self.clear_typing_state())
 
             await self.channel_layer.group_send(
@@ -208,15 +285,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 {
                     "type": "user_typing",
                     "action": "typing_start",
-                    "username": self.user.username,
-                    "user_id": self.user.id,
+                    "username": username,
+                    "user_id": user_id,
                     "sender_channel": self.channel_name,
                 },
             )
 
         elif action == "typing_stop":
             if getattr(self, "typing_timeout_task", None):
-                self.typing_timeout_task.cancel()
+                task = self.typing_timeout_task
+                if task:
+                    task.cancel()
                 self.typing_timeout_task = None
 
             await self.channel_layer.group_send(
@@ -224,8 +303,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 {
                     "type": "user_typing",
                     "action": "typing_stop",
-                    "username": self.user.username,
-                    "user_id": self.user.id,
+                    "username": username,
+                    "user_id": user_id,
                     "sender_channel": self.channel_name,
                 },
             )
@@ -237,23 +316,45 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     self.group_name,
                     {
                         "type": "public_key_broadcast",
-                        "username": self.user.username,
-                        "user_id": self.user.id,
+                        "username": username,
+                        "user_id": user_id,
                         "public_key": public_key,
                         "sender_channel": self.channel_name,
                     },
                 )
 
+        elif action == "ping":
+            await self.send(text_data=json.dumps({"type": "pong"}))
+
         elif action == "send_message":
             content = data.get("message", "")
+            parent_id = data.get("parent_id")
             if content:
-                msg = await self.save_message(self.user, self.room_id, content)
+                is_allowed = await self.check_rate_limit(
+                    f"throttle_chat_ws_{user_id}", 30, 60
+                )
+                if not is_allowed:
+                    await self.send(
+                        text_data=json.dumps(
+                            {
+                                "type": "error",
+                                "message": "Rate limit exceeded. Please wait before sending more messages.",
+                            }
+                        )
+                    )
+                    return
+
+                msg = await self.save_message(
+                    self.user, self.room_id, content, parent_id
+                )
                 await self.channel_layer.group_send(
                     self.group_name,
                     {
                         "type": "chat_message",
-                        "username": self.user.username,
-                        "user_id": self.user.id,
+                        "id": getattr(msg, "id", None),
+                        "parent_id": getattr(msg, "parent_id", None),
+                        "username": username,
+                        "user_id": user_id,
                         "message": content,
                         "created_at": msg.created_at.isoformat(),
                         "sender_channel": self.channel_name,
@@ -293,6 +394,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             text_data=json.dumps(
                 {
                     "type": "new_message",
+                    "id": event.get("id"),
+                    "parent_id": event.get("parent_id"),
                     "username": event["username"],
                     "user_id": event["user_id"],
                     "message": event["message"],
@@ -302,15 +405,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
     async def presence_joined(self, event):
-        await self.send(text_data=json.dumps({
-            "type": "presence_joined",
-            "username": event["username"],
-            "user_id": event["user_id"],
-        }))
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "presence_joined",
+                    "username": event["username"],
+                    "user_id": event["user_id"],
+                }
+            )
+        )
 
     async def presence_left(self, event):
-        await self.send(text_data=json.dumps({
-            "type": "presence_left",
-            "username": event["username"],
-            "user_id": event["user_id"],
-        }))
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "presence_left",
+                    "username": event["username"],
+                    "user_id": event["user_id"],
+                }
+            )
+        )

@@ -1,6 +1,14 @@
 from rest_framework import serializers
 
-from .models import Exercise, Lesson, LessonFeedback, Organization
+from .models import (
+    Exercise,
+    Lesson,
+    LessonFeedback,
+    LessonDraft,
+    ModuleDraft,
+    Organization,
+    QuizDraft,
+)
 
 
 def to_camel_case(snake_str):
@@ -28,6 +36,14 @@ class ExerciseSerializer(CamelCaseModelSerializer):
     class Meta:
         model = Exercise
         fields = "__all__"
+
+
+class LessonVersionSerializer(CamelCaseModelSerializer):
+    class Meta:
+        from .models import LessonVersion
+
+        model = LessonVersion
+        fields = ["id", "content", "summary", "created_at"]
 
 
 class LessonSerializer(CamelCaseModelSerializer):
@@ -125,3 +141,25 @@ class LessonFeedbackMetricsSerializer(serializers.Serializer):
 
     def to_representation(self, instance):
         return camelize(super().to_representation(instance))
+
+
+class QuizDraftSerializer(CamelCaseModelSerializer):
+    class Meta:
+        model = QuizDraft
+        fields = "__all__"
+
+
+class LessonDraftSerializer(CamelCaseModelSerializer):
+    quizzes = QuizDraftSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = LessonDraft
+        fields = "__all__"
+
+
+class ModuleDraftSerializer(CamelCaseModelSerializer):
+    lessons = LessonDraftSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ModuleDraft
+        fields = "__all__"

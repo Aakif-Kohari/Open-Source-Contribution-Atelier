@@ -11,6 +11,10 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { SectionCard } from "../components/ui/SectionCard";
+import { CommitMessageCoach } from "../components/ui/CommitMessageCoach";
+import { PrDiffSummarizer } from "../components/ui/PrDiffSummarizer";
+import { validateCommitMessage } from "../lib/conventionalCommitCoach";
+import { Link } from "react-router-dom";
 
 type Step = "setup" | "fix" | "commit" | "pr" | "success";
 
@@ -121,13 +125,11 @@ export function ContributorSandboxPage() {
   const startLinterRun = () => {
     if (!commitMsg.trim()) return;
 
-    // Check for conventional commit structure
-    const isConventional = /^(feat|fix|docs|refactor|chore)(\(.+\))?:/.test(
-      commitMsg,
-    );
-    if (!isConventional) {
+    const validation = validateCommitMessage(commitMsg);
+    if (!validation.valid) {
       alert(
-        "Our project requires Conventional Commits! Format: 'feat: add feature' or 'fix: resolve issue'",
+        validation.issues[0]?.message ??
+          "Our project requires Conventional Commits! Format: 'feat: add feature' or 'fix: resolve issue'",
       );
       return;
     }
@@ -236,7 +238,7 @@ export function ContributorSandboxPage() {
                     type="text"
                     value={terminalInput}
                     onChange={(e) => setTerminalInput(e.target.value)}
-                    className="bg-transparent border-none outline-none text-green-400 font-mono w-full focus:ring-0"
+                    className="bg-transparent border-none outline-none text-green-400 font-mono w-full focus:ring-0 touch-target-min py-2"
                     placeholder="Type clone..."
                     autoFocus
                   />
@@ -256,7 +258,7 @@ export function ContributorSandboxPage() {
                     );
                     setTimeout(() => setCurrentStep("fix"), 1500);
                   }}
-                  className="px-4 py-2 border-2 border-black bg-surface-low dark:bg-[#151411] hover:bg-accent font-black rounded-lg transition-colors text-sm"
+                  className="px-4 py-2 border-2 border-black bg-surface-low dark:bg-[#151411] hover:bg-accent font-black rounded-lg transition-colors text-sm touch-target-min inline-flex items-center justify-center"
                 >
                   Skip Typing / Auto-Run ⚡
                 </button>
@@ -318,14 +320,14 @@ export function ContributorSandboxPage() {
               <div className="flex justify-between items-center mt-6">
                 <button
                   onClick={() => setCurrentStep("setup")}
-                  className="px-4 py-2 border-2 border-black hover:bg-surface-low rounded-lg font-black text-sm"
+                  className="px-4 py-2 border-2 border-black hover:bg-surface-low rounded-lg font-black text-sm touch-target-min inline-flex items-center justify-center"
                 >
                   Back
                 </button>
                 <button
                   disabled={selectedFix === null}
                   onClick={handleFixSubmit}
-                  className="px-6 py-3 bg-black text-white dark:bg-[#ffc658] dark:text-black hover:bg-accent hover:text-black font-black rounded-xl transition-all shadow-card flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-3 bg-black text-white dark:bg-[#ffc658] dark:text-black hover:bg-accent hover:text-black font-black rounded-xl transition-all shadow-card flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed touch-target-min inline-flex items-center justify-center"
                 >
                   Submit Fix <ArrowRight size={16} />
                 </button>
@@ -357,18 +359,12 @@ export function ContributorSandboxPage() {
               </div>
 
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-black mb-2">
-                    Commit Message
-                  </label>
-                  <input
-                    type="text"
-                    value={commitMsg}
-                    onChange={(e) => setCommitMsg(e.target.value)}
-                    className="w-full border-4 border-black px-4 py-3 rounded-xl font-mono text-sm bg-white text-black shadow-card dark:bg-[#151411] dark:border-[#2e2924] dark:text-[#f0ebe2]"
-                    placeholder="e.g. fix: handle unexpected errors in token decoding"
-                  />
-                </div>
+                <CommitMessageCoach
+                  value={commitMsg}
+                  onChange={setCommitMsg}
+                  compact
+                  defaultValue=""
+                />
 
                 {isLinterRunning && (
                   <div className="bg-surface-low dark:bg-[#151411] p-4 rounded-xl border-2 border-black flex items-center gap-3">
@@ -393,14 +389,14 @@ export function ContributorSandboxPage() {
               <div className="flex justify-between items-center mt-6">
                 <button
                   onClick={() => setCurrentStep("fix")}
-                  className="px-4 py-2 border-2 border-black hover:bg-surface-low rounded-lg font-black text-sm"
+                  className="px-4 py-2 border-2 border-black hover:bg-surface-low rounded-lg font-black text-sm touch-target-min inline-flex items-center justify-center"
                 >
                   Back
                 </button>
                 <button
                   disabled={!commitMsg.trim() || isLinterRunning}
                   onClick={startLinterRun}
-                  className="px-6 py-3 bg-black text-white dark:bg-[#ffc658] dark:text-black hover:bg-accent hover:text-black font-black rounded-xl transition-all shadow-card flex items-center gap-2 disabled:opacity-50"
+                  className="px-6 py-3 bg-black text-white dark:bg-[#ffc658] dark:text-black hover:bg-accent hover:text-black font-black rounded-xl transition-all shadow-card flex items-center gap-2 disabled:opacity-50 touch-target-min inline-flex items-center justify-center"
                 >
                   Run Code Checks 🛠️
                 </button>
@@ -459,10 +455,31 @@ export function ContributorSandboxPage() {
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <p className="text-sm font-black text-text dark:text-[#f0ebe2]">
+                  Practice writing your PR description
+                </p>
+                <p className="text-xs text-muted dark:text-[#c4bbae] font-bold">
+                  Paste changed files to generate a checklist-ready PR body.
+                  Full tool:{" "}
+                  <Link
+                    to="/pr-diff-summarizer"
+                    className="underline text-accent hover:opacity-80"
+                  >
+                    /pr-diff-summarizer
+                  </Link>
+                </p>
+                <PrDiffSummarizer
+                  compact
+                  defaultIssueNumber=""
+                  className="shadow-none"
+                />
+              </div>
+
               <div className="flex justify-end gap-3 mt-6">
                 <button
                   onClick={() => setCurrentStep("success")}
-                  className="px-6 py-3 bg-green-500 text-white hover:bg-green-600 font-black rounded-xl transition-all shadow-card flex items-center gap-2"
+                  className="px-6 py-3 bg-green-500 text-white hover:bg-green-600 font-black rounded-xl transition-all shadow-card flex items-center gap-2 touch-target-min inline-flex items-center justify-center"
                 >
                   Merge PR & Unlock Badge! 🏆
                 </button>
@@ -514,7 +531,7 @@ export function ContributorSandboxPage() {
               <div className="flex justify-center gap-4 pt-4">
                 <button
                   onClick={resetAll}
-                  className="px-4 py-2 border-2 border-black hover:bg-surface-low rounded-lg font-black text-sm flex items-center gap-1.5"
+                  className="px-4 py-2 border-2 border-black hover:bg-surface-low rounded-lg font-black text-sm flex items-center gap-1.5 touch-target-min inline-flex items-center justify-center"
                 >
                   <RotateCcw size={14} /> Restart Simulator
                 </button>

@@ -1,15 +1,14 @@
 import os
 import secrets
-import io
 from pathlib import Path
 from typing import Optional
 from urllib.parse import urlencode
 
 import requests as http_requests
-from PIL import Image
 from django.conf import settings
-from django.core.files.base import ContentFile
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 from django.core.mail import send_mail
 from django.db.models import Sum
 from django.shortcuts import redirect
@@ -35,8 +34,20 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from apps.progress.models import LessonProgress, UserBadge
 from apps.progress.serializers import UserBadgeSerializer
+from schemas.user import (
+    LoginResponseSchema,
+    UserCreateSchema,
+    UserLoginSchema,
+    UserProfileSchema,
+    UserResponseSchema,
+)
 
-from .models import MagicLinkToken, OTPToken, PasswordResetToken, UserProfile
+
+class LoginResponseSchema(UserResponseSchema):
+    pass
+
+
+from .models import MagicLinkToken, OTPToken, PasswordResetToken
 from .serializers import (
     EmailOrUsernameTokenObtainPairSerializer,
     MagicLinkRequestSerializer,
@@ -48,12 +59,6 @@ from .serializers import (
     SignupSerializer,
     UserListSerializer,
     UserUpdateSerializer,
-)
-from schemas.user import (
-    UserCreateSchema,
-    UserLoginSchema,
-    UserResponseSchema,
-    UserProfileSchema,
 )
 from .tasks import (
     send_magic_link_email_task,
@@ -76,15 +81,16 @@ from .throttles import (
 )
 
 
+def username_from_value(value: str) -> str:
+    """Return a normalized username candidate from a GitHub login or email."""
+    return slugify(value.split("@")[0]) or "user"
+
+
 def unique_username_from_value(value: str) -> str:
-    base = slugify(value.split("@")[0]) or "user"
-    candidate = base
-    suffix = 1
-
-    while User.objects.filter(username=candidate).exists():
-        candidate = f"{base}{suffix}"
-        suffix += 1
-
+    """Return a username candidate, raising when it is already in use."""
+    candidate = username_from_value(value)
+    if User.objects.filter(username__iexact=candidate).exists():
+        raise ValueError("Username is already taken.")
     return candidate
 
 
@@ -109,12 +115,35 @@ class SignupView(generics.CreateAPIView):
 
 
 @extend_schema(
+    summary="Register a new user",
+    description="Create a new user account with username, email, and password",
+    request=UserCreateSchema,
+    responses={
+        201: OpenApiResponse(description="User created successfully"),
+        400: OpenApiResponse(description="Validation error"),
+    },
+    examples=[
+        OpenApiExample(
+            name="Valid Registration",
+            value={
+                "username": "johndoe",
+                "email": "john@example.com",
+                "password": "SecurePass123",
+            },
+        )
+    ],
+)
+def register(request):
+    pass
+
+
+@extend_schema(
     summary="Login user",
     description="Authenticate user and return JWT token",
     request=UserLoginSchema,
     responses={
         200: OpenApiResponse(
-            description="Login successful", response=UserResponseSchema
+            description="Login successful", response=LoginResponseSchema
         ),
         401: OpenApiResponse(description="Invalid credentials"),
     },
@@ -127,7 +156,7 @@ def login(request):
     summary="Get user profile",
     description="Returns current user profile information",
     responses={
-        200: UserResponseSchema,
+        200: UserProfileSchema,
         401: OpenApiResponse(description="Unauthorized"),
     },
 )
@@ -150,9 +179,9 @@ class MeView(APIView):
         )
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
-        instance.refresh_from_db()  # type: ignore
-        if hasattr(instance, "profile"):
-            instance.profile.refresh_from_db()  # type: ignore
+        instance.refresh_from_db()
+        if hasattr(instance, "user_profile"):
+            instance.user_profile.refresh_from_db()
         response_serializer = UserListSerializer(instance, context={"request": request})
         return Response(response_serializer.data)
 
@@ -335,57 +364,62 @@ class GitHubOAuthCallbackView(APIView):
 
         callback_url = request.build_absolute_uri("/api/auth/github/callback/")
 
+        from apps.core.resilience import CircuitBreaker, CircuitOpenError
+
+        cb = CircuitBreaker("github_oauth", failure_threshold=5, recovery_timeout=30)
         try:
-            token_response = http_requests.post(
-                "https://github.com/login/oauth/access_token",
-                headers={"Accept": "application/json"},
-                data={
-                    "client_id": client_id,
-                    "client_secret": client_secret,
-                    "code": code,
-                    "redirect_uri": callback_url,
-                },
-                timeout=10,
-            )
-            token_response.raise_for_status()
-            access_token = token_response.json().get(
-                "access_token"
-            ) or token_response.json().get("access")
-            if not access_token:
-                return redirect(
-                    frontend_url(
-                        "/", {"auth_error": "GitHub did not return an access token."}
+            with cb:
+                token_response = http_requests.post(
+                    "https://github.com/login/oauth/access_token",
+                    headers={"Accept": "application/json"},
+                    data={
+                        "client_id": client_id,
+                        "client_secret": client_secret,
+                        "code": code,
+                        "redirect_uri": callback_url,
+                    },
+                    timeout=5,
+                )
+                token_response.raise_for_status()
+                access_token = token_response.json().get(
+                    "access_token"
+                ) or token_response.json().get("access")
+                if not access_token:
+                    return redirect(
+                        frontend_url(
+                            "/",
+                            {"auth_error": "GitHub did not return an access token."},
+                        )
                     )
-                )
 
-            github_headers = {
-                "Authorization": f"Bearer {access_token}",
-                "Accept": "application/vnd.github+json",
-            }
-            user_response = http_requests.get(
-                "https://api.github.com/user", headers=github_headers, timeout=10
-            )
-            user_response.raise_for_status()
-            github_user = user_response.json()
+                github_headers = {
+                    "Authorization": f"Bearer {access_token}",
+                    "Accept": "application/vnd.github+json",
+                }
+                user_response = http_requests.get(
+                    "https://api.github.com/user", headers=github_headers, timeout=5
+                )
+                user_response.raise_for_status()
+                github_user = user_response.json()
 
-            email = github_user.get("email")
-            if not email:
-                email_response = http_requests.get(
-                    "https://api.github.com/user/emails",
-                    headers=github_headers,
-                    timeout=10,
-                )
-                email_response.raise_for_status()
-                emails = email_response.json()
-                primary_email = next(
-                    (
-                        item
-                        for item in emails
-                        if item.get("primary") and item.get("verified")
-                    ),
-                    None,
-                )
-                email = primary_email.get("email") if primary_email else None
+                email = github_user.get("email")
+                if not email:
+                    email_response = http_requests.get(
+                        "https://api.github.com/user/emails",
+                        headers=github_headers,
+                        timeout=5,
+                    )
+                    email_response.raise_for_status()
+                    emails = email_response.json()
+                    primary_email = next(
+                        (
+                            item
+                            for item in emails
+                            if item.get("primary") and item.get("verified")
+                        ),
+                        None,
+                    )
+                    email = primary_email.get("email") if primary_email else None
 
             if not email:
                 return redirect(
@@ -395,10 +429,22 @@ class GitHubOAuthCallbackView(APIView):
                 )
 
             user = User.objects.filter(email__iexact=email).first()
+            username_source = github_user.get("login") or email
+            github_username = username_from_value(username_source)
+
+            username_conflict = User.objects.filter(username__iexact=github_username)
+            if user is not None:
+                username_conflict = username_conflict.exclude(pk=user.pk)
+
+            if username_conflict.exists():
+                return Response(
+                    {"detail": "Username is already taken."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             if not user:
-                username_source = github_user.get("login") or email
                 user = User.objects.create_user(
-                    username=unique_username_from_value(username_source),
+                    username=github_username,
                     email=email,
                     password=secrets.token_urlsafe(24),
                 )
@@ -413,6 +459,15 @@ class GitHubOAuthCallbackView(APIView):
                     },
                 )
             )
+        except CircuitOpenError:
+            return redirect(
+                frontend_url(
+                    "/",
+                    {
+                        "auth_error": "GitHub authentication service is temporarily unavailable."
+                    },
+                )
+            )
         except Exception:
             return redirect(
                 frontend_url("/", {"auth_error": "GitHub authentication failed."})
@@ -424,7 +479,7 @@ from .permissions import IsAdminOrModeratorRole
 
 @extend_schema(responses=UserListSerializer(many=True))
 class UserListView(generics.ListAPIView):
-    queryset = User.objects.select_related("profile").order_by("id")
+    queryset = User.objects.select_related("user_profile").order_by("id")
     permission_classes = [permissions.IsAuthenticated, IsAdminOrModeratorRole]
     serializer_class = UserListSerializer
     pagination_class = LimitOffsetPagination
@@ -436,47 +491,6 @@ class UserListView(generics.ListAPIView):
     ]
     search_fields = ["username"]
     ordering_fields = ["id", "username"]
-
-
-class UserSuggestionsView(APIView):
-    """
-    GET /api/accounts/users/suggestions/?q=...
-    Returns up to 10 matching usernames for autocomplete mentions.
-    """
-
-    permission_classes = [permissions.IsAuthenticated]
-
-    @extend_schema(
-        parameters=[
-            OpenApiParameter(
-                name="q",
-                type=str,
-                location=OpenApiParameter.QUERY,
-                description="Username prefix/search query",
-            )
-        ],
-        responses={200: OpenApiResponse(description="List of matching users")},
-    )
-    def get(self, request):
-        q = request.query_params.get("q", "").strip()
-        if not q:
-            return Response([])
-
-        # Basic case-insensitive matching
-        users = User.objects.filter(username__icontains=q).order_by("username")[:10]
-
-        data = []
-        for user in users:
-            # We can include a basic avatar url or other profile data if available
-            avatar_url = ""
-            if hasattr(user, "profile") and hasattr(user.profile, "avatar_url"):
-                avatar_url = user.profile.avatar_url
-
-            data.append(
-                {"id": user.id, "username": user.username, "avatar_url": avatar_url}
-            )
-
-        return Response(data, status=status.HTTP_200_OK)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -584,9 +598,9 @@ class PasswordResetConfirmView(APIView):
 
         user = reset_token.user
         user.set_password(new_password)
-        if hasattr(user, "profile"):
-            user.profile.last_password_change = timezone.now()
-            user.profile.save(update_fields=["last_password_change"])
+        if hasattr(user, "user_profile"):
+            user.user_profile.last_password_change = timezone.now()
+            user.user_profile.save(update_fields=["last_password_change"])
         user.save()
 
         reset_token.is_used = True
@@ -905,73 +919,6 @@ class ExportDataView(APIView):
         )
 
 
-class AvatarUploadView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        serializer = AvatarUploadSerializer(data=request.data)
-
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        avatar = serializer.validated_data["avatar"]
-
-        # Optimize image
-        try:
-            img = Image.open(avatar)
-
-            # Convert to RGB if needed
-            if img.mode in ("RGBA", "LA", "P"):
-                img = img.convert("RGB")
-
-            # Resize to max 300x300
-            img.thumbnail((300, 300))
-
-            # Save to buffer
-            buffer = io.BytesIO()
-            img.save(buffer, format="JPEG", quality=85)
-
-            # Create new file
-            filename = f"{request.user.id}_avatar.jpg"
-            avatar_file = ContentFile(buffer.getvalue(), name=filename)
-
-        except Exception as e:
-            return Response(
-                {"error": "Invalid image file"}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # Update or create profile
-        profile, created = UserProfile.objects.get_or_create(user=request.user)
-
-        # Delete old avatar if exists
-        if profile.avatar:
-            try:
-                profile.avatar.delete(save=False)
-            except:
-                pass
-
-        profile.avatar = avatar_file
-        profile.save()
-
-        return Response(
-            {
-                "message": "Avatar uploaded successfully",
-                "avatar_url": profile.avatar.url if profile.avatar else None,
-            },
-            status=status.HTTP_200_OK,
-        )
-
-    def delete(self, request):
-        """Remove avatar"""
-        profile = UserProfile.objects.filter(user=request.user).first()
-        if profile and profile.avatar:
-            profile.avatar.delete()
-            profile.avatar = None
-            profile.save()
-            return Response({"message": "Avatar removed"})
-        return Response({"error": "No avatar found"}, status=status.HTTP_404_NOT_FOUND)
-
-
 from apps.chat.models import Message
 from apps.content.models import Comment
 
@@ -1179,46 +1126,162 @@ class LearningPathView(APIView):
         return Response({"modules": scored_modules, "next_step": recommended})
 
 
-class PublicProfileView(APIView):
-    permission_classes = [permissions.AllowAny]
+from .serializers import (
+    AvatarUploadSerializer,
+    ChangePasswordSerializer,
+    PasswordResetValidateTokenSerializer,
+)
 
-    def get(self, request, username):
-        from django.contrib.auth.models import User
-        from django.shortcuts import get_object_or_404
-        from django.db.models import Sum
-        from apps.progress.models import UserBadge, LessonProgress
-        from apps.progress.serializers import UserBadgeSerializer
-        from apps.accounts.serializers import UserListSerializer
 
-        user = get_object_or_404(User, username=username)
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
 
-        # User details
-        user_serializer = UserListSerializer(user, context={"request": request})
+    @extend_schema(
+        request=ChangePasswordSerializer,
+        responses={200: OpenApiResponse(description="Password changed successfully.")},
+    )
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        # Badges
-        earned_badges = (
-            UserBadge.objects.filter(user=user)
-            .select_related("badge")
-            .order_by("-earned_at")
+        user = request.user
+        if not user.check_password(serializer.validated_data["old_password"]):
+            return Response(
+                {"error": "Incorrect old password."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user.set_password(serializer.validated_data["new_password"])
+        user.save()
+        if hasattr(user, "user_profile"):
+            user.user_profile.increment_jwt_version()
+
+        return Response(
+            {"status": "password changed successfully"}, status=status.HTTP_200_OK
         )
-        badge_serializer = UserBadgeSerializer(earned_badges, many=True)
 
-        # Progress stats
-        total_score = (
-            LessonProgress.objects.filter(user=user).aggregate(total=Sum("score"))[
-                "total"
-            ]
-            or 0
-        )
-        completed_lessons = LessonProgress.objects.filter(
-            user=user, completed=True
-        ).count()
+
+from rest_framework.parsers import MultiPartParser
+
+
+class AvatarUploadView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
+
+    @extend_schema(
+        request=AvatarUploadSerializer,
+        responses={200: OpenApiResponse(description="Avatar uploaded successfully.")},
+    )
+    def post(self, request):
+        serializer = AvatarUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user_profile = request.user.user_profile
+        user_profile.avatar = serializer.validated_data["avatar"]
+        user_profile.save()
 
         return Response(
             {
-                "user": user_serializer.data,
-                "badges": badge_serializer.data,
-                "total_score": total_score,
-                "completed_lessons": completed_lessons,
-            }
+                "status": "avatar uploaded successfully",
+                "avatar_url": request.build_absolute_uri(user_profile.avatar.url),
+            },
+            status=status.HTTP_200_OK,
         )
+
+
+class ShopStreakFreezeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: OpenApiResponse(description="Streak freeze purchased.")}
+    )
+    def post(self, request):
+        from apps.progress.models import StreakProfile
+
+        streak_profile, _ = StreakProfile.objects.get_or_create(user=request.user)
+        streak_profile.streak_freezes += 1
+        streak_profile.save(update_fields=["streak_freezes"])
+        return Response(
+            {
+                "status": "streak freeze purchased successfully",
+                "streak_freezes": streak_profile.streak_freezes,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class PasswordResetValidateTokenView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(
+        request=PasswordResetValidateTokenSerializer,
+        responses={200: OpenApiResponse(description="Token is valid.")},
+    )
+    def post(self, request):
+        serializer = PasswordResetValidateTokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        token_value = serializer.validated_data["token"]
+        try:
+            reset_token = PasswordResetToken.objects.get(
+                token=token_value, is_used=False
+            )
+        except PasswordResetToken.DoesNotExist:
+            return Response(
+                {"error": "invalid_token"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if reset_token.is_expired():
+            return Response(
+                {"error": "expired_token"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response(
+            {"status": "password reset token is valid"}, status=status.HTTP_200_OK
+        )
+
+
+class UserSuggestionsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses=UserListSerializer(many=True))
+    def get(self, request):
+        suggestions = User.objects.exclude(id=request.user.id).order_by("-date_joined")[
+            :5
+        ]
+        serializer = UserListSerializer(
+            suggestions, many=True, context={"request": request}
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PublicProfileView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(responses=UserListSerializer)
+    def get(self, request, username):
+        from django.shortcuts import get_object_or_404
+
+        user = get_object_or_404(User, username=username)
+        serializer = UserListSerializer(user, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+from .models import UserSession
+from .serializers import UserSessionSerializer
+
+
+class UserSessionListView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserSessionSerializer
+
+    def get_queryset(self):
+        return UserSession.objects.filter(user=self.request.user)
+
+
+class UserSessionDetailView(generics.DestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserSessionSerializer
+    lookup_field = "session_id"
+
+    def get_queryset(self):
+        return UserSession.objects.filter(user=self.request.user)

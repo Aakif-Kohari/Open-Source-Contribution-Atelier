@@ -2,6 +2,7 @@ import { useMemo, useRef, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApi } from "../lib/api";
 import { useLocalSync } from "./useLocalSync";
+import { useOfflineSync } from "./useOfflineSync";
 
 export interface ProgressEntry {
   id: number;
@@ -23,6 +24,7 @@ type SyncPayload = {
 export function useUserProgress() {
   const queryClient = useQueryClient();
   useLocalSync();
+  const { syncProgress: queueOfflineSyncProgress } = useOfflineSync();
 
   // NEW: Refs to handle debouncing and UI rollback state safely without triggering re-renders
   const pendingSyncQueue = useRef<Map<string, SyncPayload>>(new Map());
@@ -33,7 +35,7 @@ export function useUserProgress() {
   const { data: progress = [], isLoading } = useQuery<ProgressEntry[]>({
     queryKey: ["userProgress"],
     queryFn: () => fetchApi("/progress/me/", { suppressErrorToast: true }),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    // Uses global staleTime default from queryClient (5 min)
   });
 
   // 2. NEW: Bulk Mutation to replace the single sync mutation
@@ -130,9 +132,24 @@ export function useUserProgress() {
         clearTimeout(syncTimeoutRef.current);
       }
 
-      syncTimeoutRef.current = setTimeout(() => {
+      syncTimeoutRef.current = setTimeout(async () => {
         const queue = Array.from(pendingSyncQueue.current.values());
         if (queue.length > 0) {
+          if (!navigator.onLine) {
+            console.log(
+              "[useUserProgress] Offline, queueing updates via useOfflineSync",
+            );
+            for (const item of queue) {
+              await queueOfflineSyncProgress({
+                lesson_slug: item.lesson_slug,
+                score: item.score,
+                completed: item.completed,
+              });
+            }
+            pendingSyncQueue.current.clear();
+            return;
+          }
+
           const previousState = snapshotRef.current;
 
           bulkSyncMutation.mutate(queue, {

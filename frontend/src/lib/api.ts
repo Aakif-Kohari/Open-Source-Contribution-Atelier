@@ -1,22 +1,20 @@
 import { enqueueOfflineAction } from "./offlineQueue";
+import { clearAccessToken, getAccessToken } from "./authToken";
+import { broadcastAuthEvent } from "./authSync";
 import toast from "react-hot-toast"; // <-- YEH HUMNE ADD KIYA HAI
 
-// 1. Defend the environment variable retrieval against server-side execution crashes
-const getSafeEnvVar = (key: string): string => {
-  if (typeof process !== "undefined" && process.env && process.env[key]) {
-    return process.env[key] as string;
+const getApiBaseUrl = () => {
+  if (typeof import.meta !== "undefined" && import.meta.env) {
+    return import.meta.env.VITE_API_BASE_URL;
   }
-  try {
-    if (typeof import.meta !== "undefined" && import.meta.env?.[key]) {
-      return import.meta.env[key] as string;
-    }
-  } catch (e) {}
-  return "";
+  if (typeof process !== "undefined" && process.env) {
+    return process.env.NEXT_PUBLIC_API_URL || process.env.VITE_API_BASE_URL;
+  }
+  return undefined;
 };
 
-// 2. Safely resolve the base URL
-const API_BASE =
-  getSafeEnvVar("VITE_API_BASE_URL").trim() ||
+export const API_BASE =
+  getApiBaseUrl()?.trim() ||
   (typeof window !== "undefined"
     ? `${window.location.origin}/api`
     : "http://127.0.0.1:8000/api");
@@ -65,17 +63,16 @@ export async function fetchApi(endpoint: string, options: RequestOptions = {}) {
   } = options;
 
   const headers = new Headers(customHeaders);
+
+  // Attach X-Request-ID for distributed tracing
+  const requestId = crypto.randomUUID();
+  headers.set("X-Request-ID", requestId);
   if (!(config.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
 
   if (requireAuth) {
-    let token: string | null = null;
-    try {
-      token = localStorage.getItem("accessToken");
-    } catch {
-      // localStorage unavailable (e.g. Safari private mode, SSR)
-    }
+    const token = getAccessToken();
     if (token) {
       headers.set("Authorization", `Bearer ${token}`);
     }
@@ -105,10 +102,14 @@ export async function fetchApi(endpoint: string, options: RequestOptions = {}) {
       if (!response.ok) {
         const errorBody = await response.json().catch(() => ({}));
         const errorMessage =
-          errorBody.detail ||
           errorBody.error ||
           errorBody.message ||
-          "An error occurred";
+          errorBody.non_field_errors?.[0] ||
+          `HTTP error ${response.status} (Req ID: ${requestId})`;
+
+        console.error(`[API Error] ReqID=${requestId}`, errorBody);
+
+        lastError = new Error(errorMessage);
 
         if (!suppressErrorToast) {
           switch (response.status) {
@@ -118,6 +119,13 @@ export async function fetchApi(endpoint: string, options: RequestOptions = {}) {
               );
               break;
             case 401:
+              clearAccessToken();
+              try {
+                localStorage.removeItem("refreshToken");
+              } catch {
+                /* storage unavailable */
+              }
+              broadcastAuthEvent("LOGOUT");
               toast.error("Session expired. Please log in again.");
               break;
             case 403:
@@ -542,7 +550,7 @@ export async function executeTerminalCommand(
 }
 
 export async function exportWorkspaceZip(projectId: string): Promise<void> {
-  const token = localStorage.getItem("accessToken");
+  const token = getAccessToken();
   const response = await fetch(
     `${API_BASE}/sandbox/projects/${projectId}/export_zip/`,
     {
@@ -574,14 +582,134 @@ export async function exportWorkspaceZip(projectId: string): Promise<void> {
   document.body.removeChild(a);
 }
 
-export function getMediaUrl(path: string | null | undefined): string | null {
-  if (!path) return null;
-  if (path.startsWith("http://") || path.startsWith("https://")) {
-    return path;
+export function getMediaUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return url;
+}
+
+// ---------------------- BOUNTIES API ----------------------
+
+export interface Bounty {
+  id: number;
+  title: string;
+  description: string;
+  xp_reward: number;
+  status: "Open" | "Claimed" | "Completed";
+  claimed_by: number | null;
+  claimed_by_username?: string;
+  created_at: string;
+}
+
+export async function fetchBounties(): Promise<Bounty[]> {
+  return fetchApi("/issues/bounties/", { method: "GET" });
+}
+
+export async function claimBounty(id: number): Promise<{ status: string }> {
+  return fetchApi(`/issues/bounties/${id}/claim/`, { method: "POST" });
+}
+
+export async function submitBounty(
+  id: number,
+  codePatch: string,
+): Promise<{ status: string; xp_earned: number }> {
+  return fetchApi(`/issues/bounties/${id}/submit/`, {
+    method: "POST",
+    body: JSON.stringify({ code_patch: codePatch }),
+  });
+}
+
+export async function exportHeatmapCSV(activityType?: string): Promise<void> {
+  const token = getAccessToken();
+  let url = `${API_BASE}/progress/heatmap/export/`;
+  if (activityType && activityType !== "all") {
+    url += `?activity_type=${activityType}`;
   }
-  const API_BASE = import.meta.env.VITE_API_BASE_URL?.trim() || `${window.location.origin}/api`;
-  const BACKEND_BASE = API_BASE.endsWith("/api")
-    ? API_BASE.substring(0, API_BASE.length - 4)
-    : API_BASE;
-  return `${BACKEND_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to export heatmap CSV");
+  }
+
+  const contentDisposition = response.headers.get("Content-Disposition") || "";
+  const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+  const filename = filenameMatch ? filenameMatch[1] : "activity_export.csv";
+
+  const blob = await response.blob();
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = downloadUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(downloadUrl);
+  document.body.removeChild(a);
+}
+
+// ---------------------- COLLAB SESSION API ----------------------
+
+export interface CollabSession {
+  id: string;
+  project: string | null;
+  allowed_users: number[];
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface CodeReviewComment {
+  id: string;
+  thread: string;
+  user: {
+    id: number;
+    username: string;
+  };
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CodeReviewThread {
+  id: string;
+  session: string;
+  line_number: number;
+  is_resolved: boolean;
+  comments: CodeReviewComment[];
+  created_at: string;
+  updated_at: string;
+}
+
+export async function createCollabSession(
+  projectId: string,
+): Promise<CollabSession> {
+  return fetchApi("/sandbox/collab-sessions/", {
+    method: "POST",
+    body: JSON.stringify({ project: projectId }),
+  });
+}
+
+export async function joinCollabSession(
+  sessionId: string,
+): Promise<CollabSession> {
+  return fetchApi(`/sandbox/collab-sessions/${sessionId}/join/`, {
+    method: "POST",
+  });
+}
+
+export async function deleteCollabSession(sessionId: string): Promise<void> {
+  return fetchApi(`/sandbox/collab-sessions/${sessionId}/`, {
+    method: "DELETE",
+  });
+}
+
+export async function fetchReviewThreads(
+  sessionId: string,
+): Promise<CodeReviewThread[]> {
+  return fetchApi(`/sandbox/review-threads/?session=${sessionId}`, {
+    method: "GET",
+  });
 }

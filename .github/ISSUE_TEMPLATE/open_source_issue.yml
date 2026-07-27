@@ -60,3 +60,5 @@ body:
           required: true
         - label: "I agree to open a Draft PR within 48 hours if this issue is assigned to me."
           required: true
+        - label: "I acknowledge the maximum 5 open assigned issues per contributor limit policy."
+          required: true

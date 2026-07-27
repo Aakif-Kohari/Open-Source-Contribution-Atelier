@@ -108,39 +108,74 @@ jobs:
               await github.rest.issues.addLabels({owner, repo, issue_number: issue.number, labels: [ecsocLabel]});
             }
 
+            async function countOpenAssignedIssues(username) {
+              try {
+                const assignedIssues = await github.paginate(github.rest.issues.listForRepo, {
+                  owner,
+                  repo,
+                  state: 'open',
+                  assignee: username,
+                  per_page: 100
+                });
+                return assignedIssues.filter(i => !i.pull_request).length;
+              } catch (err) {
+                console.warn(`Could not count open assigned issues for ${username}: ${err}`);
+                return 0;
+              }
+            }
+
             // Assign the author of the issue (skip if author is the repo owner)
             if (issue.user.login !== owner) {
-              try {
-                await github.rest.issues.addAssignees({owner, repo, issue_number: issue.number, assignees: [issue.user.login]});
-              } catch (e) {
-                console.warn(`Could not assign issue to ${issue.user.login}: ${e}`);
-                try {
-                  await github.rest.repos.addCollaborator({owner, repo, username: issue.user.login, permission: 'pull'});
-                  await github.rest.issues.addAssignees({owner, repo, issue_number: issue.number, assignees: [issue.user.login]});
-                } catch (err) {
-                  console.warn(`Failed to invite and assign issue author: ${err}`);
-                }
-              }
-              
-              // Welcome & Rules Comment
-              const welcomeBody = [
-                `### 🚀 Welcome to Open-Source Contribution Atelier, @${issue.user.login}!`,
-                ``,
-                `Please adhere strictly to our **Contribution Rules**:`,
-                `1. ⏰ **48-Hour SLA**: Open a Draft PR within **48 hours** of assignment, or the issue will be automatically unassigned.`,
-                `2. 🔗 **Link Issue**: PR description MUST include \`Fixes #${issue.number}\` for points to sync on SSoC / ECSoC leaderboards.`,
-                `3. 🧪 **Pre-Push Checks**: Run \`npm run build\` (frontend) & \`pytest\` (backend) locally before requesting review.`,
-                `4. 🏷️ **Labels**: Do NOT edit or remove program or difficulty labels (\`SSoC26\`, \`ECSoC26\`, \`easy\`, \`Medium\`, \`hard\`).`,
-                ``,
-                `> 🛠️ **Tools**: Run \`python3 verify_readiness.py\` locally | [Contributor Sandbox](https://open-source-contribution-atelier.vercel.app/contributor-sandbox) | [CONTRIBUTING.md](https://github.com/${owner}/${repo}/blob/main/CONTRIBUTING.md)`
-              ].join('\n');
+              const authorAssignedCount = await countOpenAssignedIssues(issue.user.login);
+              if (authorAssignedCount >= 5) {
+                const limitBody = [
+                  `⚠️ @${issue.user.login}, you currently have **${authorAssignedCount} open assigned issues** in this repository.`,
+                  ``,
+                  `As per our contribution policy, each contributor is limited to **5 open assigned issues** at a time. No further issues can be assigned to you until existing issues are closed or unclaimed.`,
+                  ``,
+                  `Please complete or unclaim your existing issues first!`
+                ].join('\n');
 
-              await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number: issue.number,
-                body: welcomeBody
-              });
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  body: limitBody
+                });
+              } else {
+                try {
+                  await github.rest.issues.addAssignees({owner, repo, issue_number: issue.number, assignees: [issue.user.login]});
+                } catch (e) {
+                  console.warn(`Could not assign issue to ${issue.user.login}: ${e}`);
+                  try {
+                    await github.rest.repos.addCollaborator({owner, repo, username: issue.user.login, permission: 'pull'});
+                    await github.rest.issues.addAssignees({owner, repo, issue_number: issue.number, assignees: [issue.user.login]});
+                  } catch (err) {
+                    console.warn(`Failed to invite and assign issue author: ${err}`);
+                  }
+                }
+
+                // Welcome & Rules Comment
+                const welcomeBody = [
+                  `### 🚀 Welcome to Open-Source Contribution Atelier, @${issue.user.login}!`,
+                  ``,
+                  `Please adhere strictly to our **Contribution Rules**:`,
+                  `1. ⏰ **48-Hour SLA**: Open a Draft PR within **48 hours** of assignment, or the issue will be automatically unassigned.`,
+                  `2. 🔗 **Link Issue**: PR description MUST include \`Fixes #${issue.number}\` for points to sync on SSoC / ECSoC leaderboards.`,
+                  `3. 🧪 **Pre-Push Checks**: Run \`npm run build\` (frontend) & \`pytest\` (backend) locally before requesting review.`,
+                  `4. 🏷️ **Labels**: Do NOT edit or remove program or difficulty labels (\`SSoC26\`, \`ECSoC26\`, \`easy\`, \`Medium\`, \`hard\`).`,
+                  `5. 📌 **5 Issue Cap**: Maximum **5 open assigned issues** per contributor at a time.`,
+                  ``,
+                  `> 🛠️ **Tools**: Run \`python3 verify_readiness.py\` locally | [Contributor Sandbox](https://open-source-contribution-atelier.vercel.app/contributor-sandbox) | [CONTRIBUTING.md](https://github.com/${owner}/${repo}/blob/main/CONTRIBUTING.md)`
+                ].join('\n');
+
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  body: welcomeBody
+                });
+              }
             }
 
 
@@ -161,6 +196,22 @@ jobs:
             const issue = context.payload.issue;
             const owner = context.repo.owner;
             const repo = context.repo.repo;
+
+            async function countOpenAssignedIssues(username) {
+              try {
+                const assignedIssues = await github.paginate(github.rest.issues.listForRepo, {
+                  owner,
+                  repo,
+                  state: 'open',
+                  assignee: username,
+                  per_page: 100
+                });
+                return assignedIssues.filter(i => !i.pull_request).length;
+              } catch (err) {
+                console.warn(`Could not count open assigned issues for ${username}: ${err}`);
+                return 0;
+              }
+            }
 
             // Skip if this is a comment on a PR, not an issue
             if (issue.pull_request) {
@@ -221,9 +272,31 @@ jobs:
               }
             }
 
+            // Check if commenter already has 5 or more open assigned issues
+            const openAssignedCount = await countOpenAssignedIssues(commenter);
+            if (openAssignedCount >= 5) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issue.number,
+                body: `⚠️ @${commenter}, you currently have **${openAssignedCount} open assigned issues** (the maximum limit is 5 per contributor). Please complete or unclaim your existing assigned issues before taking on new ones.`
+              });
+              return;
+            }
+
             // If it passes check or has no specific labels, assign it
             try {
               await github.rest.issues.addAssignees({owner, repo, issue_number: issue.number, assignees: [commenter]});
+              
+              const newCount = openAssignedCount + 1;
+              if (newCount === 5) {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  body: `ℹ️ @${commenter}, you have reached the maximum limit of **5 open assigned issues**. Please complete your current issues before claiming additional ones.`
+                });
+              }
             } catch (e) {
               console.warn(`Could not assign issue to ${commenter}: ${e}`);
               try {

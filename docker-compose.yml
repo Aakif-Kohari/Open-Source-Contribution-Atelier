@@ -27,6 +27,7 @@ services:
 
   redis:
     image: redis:7-alpine
+    profiles: ["redis", "full"]
     ports:
       - "6379:6379"
 
@@ -55,6 +56,7 @@ services:
   backend:
     build:
       context: ./backend
+      target: dev
     command: >
       sh -c "python manage.py migrate &&
              python manage.py runserver 0.0.0.0:8000"
@@ -68,7 +70,6 @@ services:
       - DEBUG=False
     depends_on:
       - db
-      - redis
       - pgbouncer
       - meilisearch
     labels:
@@ -91,6 +92,7 @@ services:
   worker:
     build:
       context: ./backend
+      target: dev
     command: python manage.py qcluster
     volumes:
       - ./backend:/app
@@ -102,15 +104,17 @@ services:
       - DEBUG=False
     depends_on:
       - db
-      - redis
       - meilisearch
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
     environment:
       - VITE_API_URL=http://localhost:8000
+      - DOCKER=true
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
@@ -133,4 +137,3 @@ services:
 volumes:
   postgres_data:
   meili_data:
-

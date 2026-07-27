@@ -10,8 +10,16 @@ from langdetect import detect, DetectorFactory
 
 try:
     from googletrans import Translator
-except ImportError:
-    Translator = None
+except (ImportError, ModuleNotFoundError):
+
+    class Translator:
+        def translate(self, text, **kwargs):
+            class Translation:
+                src = "en"
+                text = text
+
+            return Translation()
+
 
 import numpy as np
 from django.core.cache import cache

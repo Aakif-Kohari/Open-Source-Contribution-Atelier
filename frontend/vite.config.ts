@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "node:path";
@@ -13,12 +13,52 @@ const dirname =
     ? __dirname
     : path.dirname(fileURLToPath(import.meta.url));
 
+function buildMetadataPlugin(): Plugin {
+  return {
+    name: "build-metadata",
+    apply: "build",
+    generateBundle() {
+      const metadata = {
+        version: process.env.VERCEL_GIT_COMMIT_SHA || Date.now().toString(36),
+        builtAt: new Date().toISOString(),
+      };
+      this.emitFile({
+        type: "asset",
+        fileName: "build-metadata.json",
+        source: JSON.stringify(metadata, null, 2),
+      });
+    },
+  };
+}
+
 export default defineConfig({
+  server: {
+    host: true,
+    port: 5173,
+    strictPort: true,
+    ...(process.env.DOCKER === "true" && {
+      hmr: {
+        clientPort: 5173,
+      },
+      watch: {
+        usePolling: true,
+      },
+    }),
+  },
+  build: {
+    sourcemap: "hidden",
+  },
+  define: {
+    "process.env.VERCEL_GIT_COMMIT_SHA": JSON.stringify(
+      process.env.VERCEL_GIT_COMMIT_SHA || ""
+    ),
+  },
   worker: {
     format: "es",
   },
   base: process.env.VITE_CDN_URL || "/",
   plugins: [
+    buildMetadataPlugin(),
     react(),
     viteCompression({ algorithm: "brotliCompress", ext: ".br" }),
     viteCompression({ algorithm: "gzip", ext: ".gz" }),
@@ -32,7 +72,7 @@ export default defineConfig({
       strategies: "injectManifest",
       srcDir: "src",
       filename: "sw.js",
-      registerType: "autoUpdate",
+      registerType: "prompt",
       injectManifest: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,json,md}"],
         maximumFileSizeToCacheInBytes: 7 * 1024 * 1024,

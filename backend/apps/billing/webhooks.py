@@ -18,11 +18,10 @@ def stripe_webhook(request):
     endpoint_secret = getattr(settings, "STRIPE_WEBHOOK_SECRET", "whsec_test_mock")
 
     # If key is mock/test, skip signature verification for testing convenience
-    is_mock = (
-        getattr(settings, "TESTING", False)
-        or stripe.api_key == "sk_test_mock"
-        or sig_header is None
-    )
+    is_mock = getattr(settings, "TESTING", False) or stripe.api_key == "sk_test_mock"
+
+    if not is_mock and sig_header is None:
+        return HttpResponse("Missing Stripe-Signature header", status=400)
 
     if is_mock:
         try:

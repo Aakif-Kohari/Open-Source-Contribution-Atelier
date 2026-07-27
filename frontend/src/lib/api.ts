@@ -1,12 +1,16 @@
+/// <reference types="vite/client" />
 import { enqueueOfflineAction } from "./offlineQueue";
-import { getAccessToken } from "./authToken";
-import toast from "react-hot-toast"; // <-- YEH HUMNE ADD KIYA HAI
+import { clearAccessToken, getAccessToken } from "./authToken";
+import { broadcastAuthEvent } from "./authSync";
+import toast from "react-hot-toast";
 
 const getApiBaseUrl = () => {
   if (typeof import.meta !== "undefined" && import.meta.env) {
     return import.meta.env.VITE_API_BASE_URL;
   }
+  // @ts-ignore - process might not be defined in Vite environments
   if (typeof process !== "undefined" && process.env) {
+    // @ts-ignore
     return process.env.NEXT_PUBLIC_API_URL || process.env.VITE_API_BASE_URL;
   }
   return undefined;
@@ -100,11 +104,26 @@ export async function fetchApi(endpoint: string, options: RequestOptions = {}) {
 
       if (!response.ok) {
         const errorBody = await response.json().catch(() => ({}));
-        const errorMessage =
+        let errorMessage =
           errorBody.error ||
           errorBody.message ||
-          errorBody.non_field_errors?.[0] ||
-          `HTTP error ${response.status} (Req ID: ${requestId})`;
+          errorBody.non_field_errors?.[0];
+
+        if (!errorMessage && typeof errorBody === "object" && errorBody !== null) {
+          const fieldErrors = Object.values(errorBody)
+            .map((msgs) => {
+              if (Array.isArray(msgs)) return msgs[0];
+              if (typeof msgs === "string") return msgs;
+              return null;
+            })
+            .filter(Boolean);
+
+          if (fieldErrors.length > 0) {
+            errorMessage = fieldErrors.join(" ");
+          }
+        }
+
+        errorMessage = errorMessage || `HTTP error ${response.status} (Req ID: ${requestId})`;
 
         console.error(`[API Error] ReqID=${requestId}`, errorBody);
 
@@ -118,6 +137,13 @@ export async function fetchApi(endpoint: string, options: RequestOptions = {}) {
               );
               break;
             case 401:
+              clearAccessToken();
+              try {
+                localStorage.removeItem("refreshToken");
+              } catch {
+                /* storage unavailable */
+              }
+              broadcastAuthEvent("LOGOUT");
               toast.error("Session expired. Please log in again.");
               break;
             case 403:

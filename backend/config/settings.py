@@ -1,16 +1,13 @@
 import logging
 import os
 import sys
-from pathlib import Path
 from datetime import timedelta
-import stripe
+from pathlib import Path
+
 import dj_database_url
-from pathlib import Path
-from datetime import timedelta
+import stripe
 
 # pyrefly: ignore [missing-import]
-from datetime import timedelta
-from pathlib import Path
 from django.core.exceptions import ImproperlyConfigured
 
 from config.auth import TOKEN_BLACKLIST_ENABLED
@@ -83,34 +80,29 @@ SECURE_HSTS_PRELOAD = os.getenv(
 ).lower() in {"1", "true", "yes", "on"}
 
 # Restrictive default Content Security Policy.
-# Allow jsDelivr because the API documentation UI loads its assets from there.
-CONTENT_SECURITY_POLICY = os.getenv(
-    "CONTENT_SECURITY_POLICY",
-    (
-        "default-src 'self'; "
-        "base-uri 'self'; "
-        "object-src 'none'; "
-        "frame-ancestors 'none'; "
-        "form-action 'self'; "
-        "script-src 'self' https://cdn.jsdelivr.net; "
-        "style-src 'self' https://cdn.jsdelivr.net; "
-        "img-src 'self' data: blob: http: https: https://cdn.jsdelivr.net; "
-        "font-src 'self' data: https://cdn.jsdelivr.net; "
-        "connect-src 'self'; "
-        "media-src 'self'; "
-        "worker-src 'self'; "
-        "manifest-src 'self'; "
-        "upgrade-insecure-requests"
-    ),
+CONTENT_SECURITY_POLICY = (
+    "default-src 'self'; "
+    "script-src 'self' https://cdn.jsdelivr.net; "
+    "style-src 'self' https://cdn.jsdelivr.net; "
+    "img-src 'self' data: blob: https://*.amazonaws.com; "
+    "connect-src 'self' wss://localhost:* wss://*.vercel.app; "
+    "font-src 'self' https://cdn.jsdelivr.net; "
+    "frame-ancestors 'none'; "
+    "base-uri 'self'; "
+    "form-action 'self'; "
 )
 
 TESTING = "test" in sys.argv or "pytest" in sys.modules
 
-ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
-    if host.strip()
-]
+_raw_hosts = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = [host.strip() for host in _raw_hosts if host.strip()]
+
+if not DEBUG and "*" in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.remove("*")
+
+_render_host = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+if _render_host and _render_host not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(_render_host)
 
 if not DEBUG and not TESTING and not ALLOWED_HOSTS:
     from django.core.exceptions import ImproperlyConfigured
@@ -550,6 +542,7 @@ INSTALLED_APPS += [
     "channels",
     "apps.notifications.apps.NotificationsConfig",
     "apps.dashboard.apps.DashboardConfig",
+    "apps.predictions.apps.PredictionsConfig",
     "apps.chat.apps.ChatConfig",
     "django.contrib.postgres",
     "apps.search.apps.SearchConfig",
@@ -573,6 +566,7 @@ CONTENT_SECURITY_POLICY = {
         "data:",
     ],
 }
+
 
 # ──────────────────────────────────────────
 # Redis / Channels (graceful fallback when Redis is down)

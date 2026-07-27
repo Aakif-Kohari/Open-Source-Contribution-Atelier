@@ -1,6 +1,5 @@
 from django.contrib import admin
 from django.urls import include, path, re_path
-from django.urls import path
 from django.views.decorators.csrf import csrf_exempt
 from drf_spectacular.views import (
     SpectacularAPIView,
@@ -14,11 +13,14 @@ from apps.dashboard.views import LeaderboardView
 from .health_view import health_view
 from .version_view import version_view
 from apps.billing.views import CheckoutSessionView
-from .webhooks import stripe_webhook
+from apps.billing.webhooks import stripe_webhook
 
 urlpatterns = [
     # ── Admin ──────────────────────────────────────────────────────────────────
     path("admin/", admin.site.urls),
+    path("api/admin/", include("apps.monitoring.urls")),
+    path("api/monitoring/", include("apps.monitoring.urls")),
+
     # ── Health Checks ──────────────────────────────────────────────────────────
     path("health/", include("apps.health.urls")),
     # ── Legacy Health (keep for backward compatibility) ──────────────────────
@@ -42,6 +44,7 @@ urlpatterns = [
     # ── Notifications & Real-time ─────────────────────────────────────────────
     path("api/notifications/", include("apps.notifications.urls")),
     path("api/dashboard/", include("apps.dashboard.urls")),
+    path("api/predictions/", include("apps.predictions.urls")),
     path("create-checkout-session/", CheckoutSessionView.as_view()),
     path("webhook/", stripe_webhook),
     path("api/search/", include("apps.search.urls")),
@@ -83,7 +86,6 @@ urlpatterns = [
     # ── AI Tutor ────────────────────────────────────────────────────────────────
     path("api/ai/tutor/", include("apps.ai_tutor.urls")),
     # ── Events & GraphQL ──────────────────────────────────────────────────────
-    # path("api/events/", include("apps.events.urls")),
     path("api/graphql/", include("apps.graphql_gateway.urls")),
     path("api/graphql/legacy/", csrf_exempt(GraphQLView.as_view(graphiql=True))),
     # ============================================================
@@ -92,7 +94,7 @@ urlpatterns = [
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
         "api/docs/",
-        SpectacularSwaggerView.as_view(url_name="schema"),  # Fixed here
+        SpectacularSwaggerView.as_view(url_name="schema"),
         name="swagger-ui",
     ),
     # ============================================================

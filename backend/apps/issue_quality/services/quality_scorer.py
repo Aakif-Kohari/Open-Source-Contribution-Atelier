@@ -7,15 +7,20 @@ import hashlib
 from typing import Dict, Any, List, Tuple, Optional
 from textblob import TextBlob
 from langdetect import detect, DetectorFactory
+
 try:
     from googletrans import Translator
 except (ImportError, ModuleNotFoundError):
+
     class Translator:
         def translate(self, text, **kwargs):
             class Translation:
                 src = "en"
                 text = text
+
             return Translation()
+
+
 import numpy as np
 from django.core.cache import cache
 from apps.issue_quality.models import IssueQualityCheck, DuplicateIssue, WontfixPattern

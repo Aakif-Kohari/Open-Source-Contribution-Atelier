@@ -171,6 +171,21 @@ jobs:
             const existingAssignees = issue.assignees.map(a => a.login);
             const author = issue.user.login;
             const commenter = comment.user.login;
+            const commentText = (comment.body || '').toLowerCase();
+
+            // Handle /unclaim command
+            if (commentText.includes('/unclaim') || commentText.includes('!unclaim')) {
+              if (existingAssignees.includes(commenter)) {
+                await github.rest.issues.removeAssignees({owner, repo, issue_number: issue.number, assignees: [commenter]});
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  body: `🛠️ @${commenter} has **unclaimed** this issue. It is now open for other contributors.`
+                });
+              }
+              return;
+            }
 
             if (commenter === author) { console.log('Commenter is the author – no reassignment.'); return; }
 
@@ -181,19 +196,17 @@ jobs:
             const labels = issue.labels.map(l => l.name.toLowerCase());
             const isSsoc = labels.some(l => l.includes('ssoc26') || l.includes('ssoc-26'));
             const isEcsoc = labels.some(l => l.includes('ecsoc26') || l.includes('ecsoc-26'));
-            
-            const commentText = (comment.body || '').toLowerCase();
 
             if (isSsoc || isEcsoc) {
-              const mentionsSsoc = /\b(ssoc|ssoc26|ssoc2026|ssoc-26|ssoc-2026)\b/i.test(commentText);
-              const mentionsEcsoc = /\b(ecsoc|ecsoc26|ecsoc2026|ecsoc-26|ecsoc-2026)\b/i.test(commentText);
+              const mentionsSsoc = /\b(ssoc|ssoc26|ssoc2026|ssoc-26|ssoc-2026|\/claim|!claim|\/assignme)\b/i.test(commentText);
+              const mentionsEcsoc = /\b(ecsoc|ecsoc26|ecsoc2026|ecsoc-26|ecsoc-2026|\/claim|!claim|\/assignme)\b/i.test(commentText);
 
               if (isSsoc && !mentionsSsoc) {
                 await github.rest.issues.createComment({
                   owner,
                   repo,
                   issue_number: issue.number,
-                  body: `⚠️ @${commenter}, this issue is reserved for **SSoC 2026** contributors. To be assigned, please post a comment mentioning \`ssoc26\`.`
+                  body: `⚠️ @${commenter}, this issue is reserved for **SSoC 2026** contributors. To be assigned, please post a comment mentioning \`ssoc26\` or \`/claim\`.`
                 });
                 return;
               }
@@ -202,7 +215,7 @@ jobs:
                   owner,
                   repo,
                   issue_number: issue.number,
-                  body: `⚠️ @${commenter}, this issue is reserved for **ECSoC 2026** contributors. To be assigned, please post a comment mentioning \`ecsoc26\`.`
+                  body: `⚠️ @${commenter}, this issue is reserved for **ECSoC 2026** contributors. To be assigned, please post a comment mentioning \`ecsoc26\` or \`/claim\`.`
                 });
                 return;
               }
@@ -211,16 +224,13 @@ jobs:
             // If it passes check or has no specific labels, assign it
             try {
               await github.rest.issues.addAssignees({owner, repo, issue_number: issue.number, assignees: [commenter]});
-              await github.rest.issues.createComment({owner, repo, issue_number: issue.number, body: `🛠️ @${commenter} has been **assigned** to this issue as the first responder.`});
             } catch (e) {
               console.warn(`Could not assign issue to ${commenter}: ${e}`);
               try {
                 await github.rest.repos.addCollaborator({owner, repo, username: commenter, permission: 'pull'});
                 await github.rest.issues.addAssignees({owner, repo, issue_number: issue.number, assignees: [commenter]});
-                await github.rest.issues.createComment({owner, repo, issue_number: issue.number, body: `🛠️ @${commenter} has been **assigned** to this issue as the first responder (invitation sent).`});
               } catch (err) {
                 console.warn(`Failed to invite and assign commenter: ${err}`);
-                await github.rest.issues.createComment({owner, repo, issue_number: issue.number, body: `⚠️ Could not assign @${commenter} to this issue. Please make sure you are a collaborator or have accepted the invitation.`});
               }
             }
 

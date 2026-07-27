@@ -86,19 +86,43 @@ class TestStreakRecovery:
         plan = StreakRecoveryService.get_or_create_recovery_plan(user)
         assert plan is not None
 
-        # 1. Complete quiz
-        QuizAttempt.objects.create(user=user, question_id="q1", is_correct=True)
-
-        # 2. Complete code submission
-        ExerciseAttempt.objects.create(user=user, exercise=exercise, is_correct=True)
+        
+        # 1. Incorrect quiz attempt should NOT count
+        QuizAttempt.objects.create(
+            user=user,
+            question_id="q1",
+            is_correct=False,
+        )
 
         # Sync progress
         plan = StreakRecoveryService.sync_and_update_progress(plan)
+        plan.refresh_from_db()
+
+        assert plan.quiz_progress == 0
+
+        # 2. Correct quiz attempt should count
+        QuizAttempt.objects.create(
+            user=user,
+            question_id="q2",
+            is_correct=True,
+        )
+
+        # 3. Complete code submission
+        ExerciseAttempt.objects.create(
+            user=user,
+            exercise=exercise,
+            is_correct=True,
+        )
+
+        # Sync progress
+        plan = StreakRecoveryService.sync_and_update_progress(plan)
+        plan.refresh_from_db()
+        
         assert plan.quiz_progress == 1
         assert plan.code_progress == 1
         assert plan.is_completed is False  # reading still not completed
 
-        # 3. Simulate reading time (reading progress to 15)
+        # 4. Simulate reading time (reading progress to 15)
         plan.reading_progress = 15
         plan.save()
 

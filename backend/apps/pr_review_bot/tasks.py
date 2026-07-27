@@ -2,13 +2,15 @@
 Celery tasks for PR review bot.
 """
 
+import logging
+
 from celery import shared_task
 from django.core.cache import cache
-import logging
+
+from apps.pr_review_bot.models import CodeIssue, PRReview, ReviewConfig
 from apps.pr_review_bot.services.code_analyzer import CodeAnalyzer
-from apps.pr_review_bot.services.llm_analyzer import LLMAnalyzer
 from apps.pr_review_bot.services.github_client import GitHubClient
-from apps.pr_review_bot.models import PRReview, CodeIssue, ReviewConfig
+from apps.pr_review_bot.services.llm_analyzer import LLMAnalyzer
 
 logger = logging.getLogger(__name__)
 

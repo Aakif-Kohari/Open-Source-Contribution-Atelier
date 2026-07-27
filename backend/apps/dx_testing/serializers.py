@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from apps.dx_testing.models import DXTestRun, DXMetric, DXRecommendation
+
+from apps.dx_testing.models import DXMetric, DXRecommendation, DXTestRun
 
 
 class DXTestRunSerializer(serializers.ModelSerializer):

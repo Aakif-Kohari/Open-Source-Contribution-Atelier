@@ -1,7 +1,8 @@
 import numpy as np
 from django.core.management.base import BaseCommand
-from apps.predictions.models import PullRequestMetric, ReviewerAvailability
+
 from apps.predictions.ml_engine import predictor
+from apps.predictions.models import PullRequestMetric, ReviewerAvailability
 
 
 class Command(BaseCommand):

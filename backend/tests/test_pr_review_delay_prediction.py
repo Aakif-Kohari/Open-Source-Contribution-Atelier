@@ -1,12 +1,13 @@
 import pytest
 from rest_framework.test import APIClient
+
+from apps.predictions.ml_engine import predictor
 from apps.predictions.models import (
-    ReviewerAvailability,
+    DelayAlert,
     PullRequestMetric,
     ReviewDelayPrediction,
-    DelayAlert,
+    ReviewerAvailability,
 )
-from apps.predictions.ml_engine import predictor
 from apps.predictions.tasks import (
     monitor_pr_review_delays,
     update_reviewer_availability,

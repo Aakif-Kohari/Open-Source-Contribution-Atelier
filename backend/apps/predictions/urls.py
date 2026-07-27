@@ -1,11 +1,12 @@
 from django.urls import path
+
 from .views import (
-    PredictDelayAPIView,
-    ReviewerAvailabilityAPIView,
     DelayAlertsAPIView,
-    TriggerMonitoringAPIView,
-    TrainModelAPIView,
+    PredictDelayAPIView,
     PredictionAnalyticsAPIView,
+    ReviewerAvailabilityAPIView,
+    TrainModelAPIView,
+    TriggerMonitoringAPIView,
 )
 
 urlpatterns = [

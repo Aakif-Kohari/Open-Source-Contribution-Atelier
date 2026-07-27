@@ -8,6 +8,7 @@ from django.conf import settings
 from django.core.cache import cache
 
 from apps.accounts.throttles import RedisLuaRateLimiter  # type: ignore
+
 from .models import Message
 
 logger = logging.getLogger(__name__)

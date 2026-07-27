@@ -17,7 +17,6 @@ import time
 from typing import Tuple
 
 from django.conf import settings as django_settings
-
 from django.core.cache import cache
 from rest_framework.throttling import SimpleRateThrottle
 

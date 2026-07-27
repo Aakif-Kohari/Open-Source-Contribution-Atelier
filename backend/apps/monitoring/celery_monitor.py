@@ -1,9 +1,11 @@
 import logging
 import os
 from datetime import timedelta
-from django.utils import timezone
+
+from celery.signals import task_failure, task_postrun, task_prerun, task_retry
 from django.db import models
-from celery.signals import task_prerun, task_postrun, task_failure, task_retry
+from django.utils import timezone
+
 from apps.monitoring.models import TaskRun
 
 logger = logging.getLogger(__name__)
@@ -69,8 +71,8 @@ def broadcast_task_update(task_run):
     Sends WebSocket update to 'celery_monitor' group if Channels is available.
     """
     try:
-        from channels.layers import get_channel_layer
         from asgiref.sync import async_to_sync
+        from channels.layers import get_channel_layer
 
         channel_layer = get_channel_layer()
         if channel_layer:

@@ -3,10 +3,11 @@ LLM-based code analysis.
 """
 
 import json
-import openai
-from typing import Dict, Any, List
-from django.conf import settings
 import logging
+from typing import Any, Dict, List
+
+import openai
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 

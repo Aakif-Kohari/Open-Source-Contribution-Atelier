@@ -1,10 +1,12 @@
-from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.test import TestCase
+
 from apps.accounts.models import UserProfile
-from apps.organizations.models import Organization
-from apps.content.models import Lesson, Organization as ContentOrganization
 from apps.challenges.models import Challenge
+from apps.content.models import Lesson
+from apps.content.models import Organization as ContentOrganization
+from apps.organizations.models import Organization
 from apps.progress.models import LessonProgress
 from apps.recommendations.engine import RecommendationEngine
 from apps.recommendations.models import Recommendation

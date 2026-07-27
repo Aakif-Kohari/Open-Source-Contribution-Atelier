@@ -1,7 +1,12 @@
 import logging
 import numpy as np
 from celery import shared_task
-from .models import PullRequestMetric, ReviewDelayPrediction, DelayAlert, ReviewerAvailability
+from .models import (
+    PullRequestMetric,
+    ReviewDelayPrediction,
+    DelayAlert,
+    ReviewerAvailability,
+)
 from .ml_engine import predictor
 
 logger = logging.getLogger(__name__)
@@ -56,7 +61,11 @@ def monitor_pr_review_delays():
                 )
                 DelayAlert.objects.create(
                     prediction=prediction,
-                    alert_type="HIGH_STAGNATION_RISK" if res["risk_level"] == "HIGH" else "CRITICAL_STAGNATION_RISK",
+                    alert_type=(
+                        "HIGH_STAGNATION_RISK"
+                        if res["risk_level"] == "HIGH"
+                        else "CRITICAL_STAGNATION_RISK"
+                    ),
                     message=message,
                     is_sent=True,
                 )
@@ -95,8 +104,14 @@ def retrain_predictions_model():
     for pr in prs:
         workload = pr.assigned_reviewer.current_workload if pr.assigned_reviewer else 1
         activity = pr.assigned_reviewer.activity_score if pr.assigned_reviewer else 0.8
-        avg_resp = pr.assigned_reviewer.avg_response_time_hours if pr.assigned_reviewer else 24.0
-        X_train.append([pr.total_lines_changed, pr.changed_files, workload, activity, avg_resp])
+        avg_resp = (
+            pr.assigned_reviewer.avg_response_time_hours
+            if pr.assigned_reviewer
+            else 24.0
+        )
+        X_train.append(
+            [pr.total_lines_changed, pr.changed_files, workload, activity, avg_resp]
+        )
         y_train.append(pr.actual_review_delay_hours)
 
     predictor.fit_model(np.array(X_train), np.array(y_train))

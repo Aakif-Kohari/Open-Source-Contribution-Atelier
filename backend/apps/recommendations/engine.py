@@ -24,7 +24,11 @@ class RecommendationEngine:
         try:
             from apps.accounts.models import UserProfile
 
-            profile = UserProfile.objects.filter(user=self.user).select_related("organization").first()
+            profile = (
+                UserProfile.objects.filter(user=self.user)
+                .select_related("organization")
+                .first()
+            )
             if profile and profile.organization_id:
                 return profile.organization
         except Exception:
@@ -96,7 +100,9 @@ class RecommendationEngine:
             if org is not None:
                 org_id = getattr(org, "id", None)
                 challenges = challenges.filter(
-                    Q(organization_id=org_id) | Q(is_public=True) | Q(organization__isnull=True)
+                    Q(organization_id=org_id)
+                    | Q(is_public=True)
+                    | Q(organization__isnull=True)
                 )
             else:
                 challenges = challenges.filter(
@@ -130,7 +136,9 @@ class RecommendationEngine:
                 org_id = getattr(org, "id", None)
                 org_name = getattr(org, "name", None)
                 lessons = lessons.filter(
-                    Q(organization_id=org_id) | Q(organization__name=org_name) | Q(organization__isnull=True)
+                    Q(organization_id=org_id)
+                    | Q(organization__name=org_name)
+                    | Q(organization__isnull=True)
                 )
             else:
                 lessons = lessons.filter(organization__isnull=True)

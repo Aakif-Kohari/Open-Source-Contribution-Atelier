@@ -3,9 +3,18 @@ from rest_framework import status, views
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.db.models import Avg, Count
-from .models import ReviewerAvailability, PullRequestMetric, ReviewDelayPrediction, DelayAlert
+from .models import (
+    ReviewerAvailability,
+    PullRequestMetric,
+    ReviewDelayPrediction,
+    DelayAlert,
+)
 from .ml_engine import predictor
-from .tasks import monitor_pr_review_delays, update_reviewer_availability, retrain_predictions_model
+from .tasks import (
+    monitor_pr_review_delays,
+    update_reviewer_availability,
+    retrain_predictions_model,
+)
 from .github_service import GitHubPRService
 
 
@@ -24,10 +33,13 @@ class PredictDelayAPIView(views.APIView):
             activity_score = float(data.get("activity_score", 0.8))
             avg_response_time_hours = float(data.get("avg_response_time_hours", 24.0))
         except (ValueError, TypeError) as e:
-            return Response({
-                "error": "Invalid input data types. Numerical parameters additions, deletions, changed_files, current_workload, activity_score, and avg_response_time_hours must be valid numbers.",
-                "details": str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {
+                    "error": "Invalid input data types. Numerical parameters additions, deletions, changed_files, current_workload, activity_score, and avg_response_time_hours must be valid numbers.",
+                    "details": str(e),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         reviewer_username = data.get("assigned_reviewer")
         workload = current_workload
@@ -36,7 +48,9 @@ class PredictDelayAPIView(views.APIView):
 
         if reviewer_username:
             try:
-                rev = ReviewerAvailability.objects.get(reviewer_username=reviewer_username)
+                rev = ReviewerAvailability.objects.get(
+                    reviewer_username=reviewer_username
+                )
                 workload = rev.current_workload
                 activity = rev.activity_score
                 avg_resp = rev.avg_response_time_hours
@@ -66,7 +80,9 @@ class PredictDelayAPIView(views.APIView):
                     "deletions": deletions,
                     "changed_files": changed_files,
                 }
-                pr_obj = service.sync_pr_metric(pr_data, assigned_reviewer_username=reviewer_username)
+                pr_obj = service.sync_pr_metric(
+                    pr_data, assigned_reviewer_username=reviewer_username
+                )
 
                 prediction_obj = ReviewDelayPrediction.objects.create(
                     pr=pr_obj,
@@ -93,7 +109,8 @@ class PredictDelayAPIView(views.APIView):
 
         res["pr_number"] = pr_number
         res["recommendation"] = (
-            "Review workload optimal." if res["risk_level"] in ["LOW", "MEDIUM"]
+            "Review workload optimal."
+            if res["risk_level"] in ["LOW", "MEDIUM"]
             else "High risk of stagnation! Recommend re-assigning to an available reviewer with lower workload."
         )
         return Response(res, status=status.HTTP_200_OK)
@@ -121,14 +138,20 @@ class ReviewerAvailabilityAPIView(views.APIView):
     def post(self, request):
         username = request.data.get("reviewer_username")
         if not username:
-            return Response({"error": "reviewer_username is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "reviewer_username is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             workload = int(request.data.get("current_workload", 0))
             activity = float(request.data.get("activity_score", 1.0))
             avg_resp = float(request.data.get("avg_response_time_hours", 24.0))
         except (ValueError, TypeError) as e:
-            return Response({"error": "Invalid numerical parameters provided", "details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Invalid numerical parameters provided", "details": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         reviewer, created = ReviewerAvailability.objects.get_or_create(
             reviewer_username=username,
@@ -136,7 +159,7 @@ class ReviewerAvailabilityAPIView(views.APIView):
                 "current_workload": workload,
                 "activity_score": activity,
                 "avg_response_time_hours": avg_resp,
-            }
+            },
         )
         if not created:
             reviewer.current_workload = workload
@@ -144,12 +167,15 @@ class ReviewerAvailabilityAPIView(views.APIView):
             reviewer.avg_response_time_hours = avg_resp
             reviewer.save()
 
-        return Response({
-            "message": "Reviewer availability updated",
-            "reviewer_username": reviewer.reviewer_username,
-            "current_workload": reviewer.current_workload,
-            "activity_score": reviewer.activity_score,
-        }, status=status.HTTP_200_OK if not created else status.HTTP_201_CREATED)
+        return Response(
+            {
+                "message": "Reviewer availability updated",
+                "reviewer_username": reviewer.reviewer_username,
+                "current_workload": reviewer.current_workload,
+                "activity_score": reviewer.activity_score,
+            },
+            status=status.HTTP_200_OK if not created else status.HTTP_201_CREATED,
+        )
 
 
 class DelayAlertsAPIView(views.APIView):
@@ -182,6 +208,7 @@ class TriggerMonitoringAPIView(views.APIView):
         queued = False
         try:
             from django_q.tasks import async_task
+
             async_task("apps.predictions.tasks.monitor_pr_review_delays")
             async_task("apps.predictions.tasks.update_reviewer_availability")
             queued = True
@@ -196,7 +223,10 @@ class TriggerMonitoringAPIView(views.APIView):
                 msg = "Async worker service unavailable. Monitoring task could not be queued."
 
         if not queued:
-            return Response({"status": msg, "error": "Async worker unavailable"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            return Response(
+                {"status": msg, "error": "Async worker unavailable"},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
 
         return Response({"status": msg}, status=status.HTTP_202_ACCEPTED)
 
@@ -211,6 +241,7 @@ class TrainModelAPIView(views.APIView):
         queued = False
         try:
             from django_q.tasks import async_task
+
             async_task("apps.predictions.tasks.retrain_predictions_model")
             queued = True
             msg = "Model retraining task queued asynchronously via Django-Q."
@@ -225,10 +256,13 @@ class TrainModelAPIView(views.APIView):
                 msg = "Model retraining completed."
                 queued = True
 
-        return Response({
-            "message": msg,
-            "queued": queued,
-        }, status=status.HTTP_202_ACCEPTED)
+        return Response(
+            {
+                "message": msg,
+                "queued": queued,
+            },
+            status=status.HTTP_202_ACCEPTED,
+        )
 
 
 class PredictionAnalyticsAPIView(views.APIView):
@@ -237,17 +271,29 @@ class PredictionAnalyticsAPIView(views.APIView):
     def get(self, request):
         total_prs = PullRequestMetric.objects.count()
         total_predictions = ReviewDelayPrediction.objects.count()
-        avg_predicted = ReviewDelayPrediction.objects.aggregate(Avg("predicted_delay_hours"))["predicted_delay_hours__avg"] or 0.0
-        risk_counts = ReviewDelayPrediction.objects.values("risk_level").annotate(count=Count("risk_level"))
+        avg_predicted = (
+            ReviewDelayPrediction.objects.aggregate(Avg("predicted_delay_hours"))[
+                "predicted_delay_hours__avg"
+            ]
+            or 0.0
+        )
+        risk_counts = ReviewDelayPrediction.objects.values("risk_level").annotate(
+            count=Count("risk_level")
+        )
 
         estimated_hours_saved = round(avg_predicted * 0.3, 1) if avg_predicted else 0.0
 
-        return Response({
-            "total_prs_tracked": total_prs,
-            "total_predictions": total_predictions,
-            "avg_predicted_delay_hours": round(avg_predicted, 1),
-            "confidence_margin_hours": 12.0,
-            "estimated_review_time_reduction": f"{estimated_hours_saved}h (30% faster target achieved)",
-            "risk_level_distribution": {item["risk_level"]: item["count"] for item in risk_counts},
-            "active_alerts": DelayAlert.objects.filter(is_sent=True).count(),
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "total_prs_tracked": total_prs,
+                "total_predictions": total_predictions,
+                "avg_predicted_delay_hours": round(avg_predicted, 1),
+                "confidence_margin_hours": 12.0,
+                "estimated_review_time_reduction": f"{estimated_hours_saved}h (30% faster target achieved)",
+                "risk_level_distribution": {
+                    item["risk_level"]: item["count"] for item in risk_counts
+                },
+                "active_alerts": DelayAlert.objects.filter(is_sent=True).count(),
+            },
+            status=status.HTTP_200_OK,
+        )

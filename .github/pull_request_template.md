@@ -41,7 +41,7 @@ Fixes #<!-- issue number -->
 ## Pre-Push Checklist
 
 > [!IMPORTANT]
-> **All items below must be checked before requesting a review.** Our CI bot will automatically run the frontend build and backend tests on your PR. If CI fails, you will receive a comment explaining what went wrong.
+> **All items below must be checked before requesting a review.** Our CI bot and CodeRabbit AI will automatically run build/test checks and review your PR. If CI fails, you will receive a comment explaining what went wrong.
 
 - [ ] My code follows the style guidelines of this project
 - [ ] I have performed a self-review of my own code

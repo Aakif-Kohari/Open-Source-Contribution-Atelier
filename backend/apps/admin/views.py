@@ -1,10 +1,12 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAdminUser
-from .services import ProductivityService
-from .serializers import ProductivitySerializer
 import csv
+
 from django.http import HttpResponse
+from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .serializers import ProductivitySerializer
+from .services import ProductivityService
 
 
 class ProductivityDashboardView(APIView):
@@ -37,9 +39,10 @@ class ProductivityDashboardView(APIView):
 
     def _get_daily_trend(self):
         # Daily PR opened/closed trend
-        from django.db.models import Count
-        from datetime import timedelta
         import calendar
+        from datetime import timedelta
+
+        from django.db.models import Count
 
         days = 30
         cutoff = timezone.now() - timedelta(days=days)

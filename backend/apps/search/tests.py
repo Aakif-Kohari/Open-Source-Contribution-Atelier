@@ -177,8 +177,9 @@ class SearchEngineEdgeCaseTests(TestCase):
 
 class SearchCachingTests(TestCase):
     def setUp(self):
-        from apps.search.tests import _is_postgres
         import unittest
+
+        from apps.search.tests import _is_postgres
 
         if not _is_postgres():
             raise unittest.SkipTest("PostgreSQL-only test")
@@ -207,6 +208,7 @@ class SearchCachingTests(TestCase):
 
     def test_cache_version_bump(self):
         from django.core.cache import cache
+
         from apps.search.utils import bump_search_cache_version
 
         request = self.factory.get("/api/search/", {"q": "React"})

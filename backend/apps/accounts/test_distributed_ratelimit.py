@@ -1,6 +1,8 @@
 import asyncio
+
 import pytest
 from django.conf import settings
+
 from apps.accounts.throttles import RedisLuaRateLimiter, UserRateThrottle
 
 

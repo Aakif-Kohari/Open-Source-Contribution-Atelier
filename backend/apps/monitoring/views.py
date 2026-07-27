@@ -1,15 +1,17 @@
-from rest_framework import viewsets, permissions, status
+import threading
+from datetime import timedelta
+
+from django.core.management import call_command
+from django.db import models
+from django.utils import timezone
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.core.management import call_command
-from django.db import models
+
+from apps.monitoring.celery_monitor import get_celery_stats, get_task_type_stats
 from apps.monitoring.models import BackupVerification, TaskRun
 from apps.monitoring.serializers import BackupVerificationSerializer, TaskRunSerializer
-from apps.monitoring.celery_monitor import get_celery_stats, get_task_type_stats
-from datetime import timedelta
-from django.utils import timezone
-import threading
 
 
 class BackupVerificationViewSet(viewsets.ReadOnlyModelViewSet):

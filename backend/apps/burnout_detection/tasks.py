@@ -2,16 +2,18 @@
 Celery tasks for burnout detection.
 """
 
+import logging
+
 from celery import shared_task
 from django.utils import timezone
+
 from apps.burnout_detection.models import (
-    ContributorActivity,
     BurnoutSignal,
+    ContributorActivity,
     Intervention,
 )
 from apps.burnout_detection.services.burnout_detector import BurnoutDetector
 from apps.burnout_detection.services.sentiment_analyzer import SentimentAnalyzer
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +67,7 @@ def trigger_intervention(user_id: int):
     from django.contrib.auth import get_user_model
 
     User = get_user_model()
-    from apps.burnout_detection.models import Intervention, BurnoutSignal
+    from apps.burnout_detection.models import BurnoutSignal, Intervention
 
     try:
         user = User.objects.get(id=user_id)

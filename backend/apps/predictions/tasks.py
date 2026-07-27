@@ -1,13 +1,15 @@
 import logging
+
 import numpy as np
 from celery import shared_task
+
+from .ml_engine import predictor
 from .models import (
+    DelayAlert,
     PullRequestMetric,
     ReviewDelayPrediction,
-    DelayAlert,
     ReviewerAvailability,
 )
-from .ml_engine import predictor
 
 logger = logging.getLogger(__name__)
 

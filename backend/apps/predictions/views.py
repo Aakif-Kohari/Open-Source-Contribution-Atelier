@@ -7,18 +7,6 @@ from rest_framework import status, views
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from .models import (
-    ReviewerAvailability,
-    PullRequestMetric,
-    ReviewDelayPrediction,
-    DelayAlert,
-)
-from .ml_engine import predictor
-from .tasks import (
-    monitor_pr_review_delays,
-    update_reviewer_availability,
-    retrain_predictions_model,
-)
 from .github_service import GitHubPRService
 from .ml_engine import predictor
 from .models import (

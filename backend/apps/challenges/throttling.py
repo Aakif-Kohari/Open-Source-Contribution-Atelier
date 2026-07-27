@@ -1,5 +1,7 @@
 import logging
+
 from django.conf import settings
+
 from apps.accounts.throttles import RedisLuaRateLimiter  # type: ignore
 
 logger = logging.getLogger(__name__)

@@ -2,11 +2,12 @@
 Quality scoring for issues to prevent WONTFIX labeling.
 """
 
-import re
 import hashlib
-from typing import Dict, Any, List, Tuple, Optional
+import re
+from typing import Any, Dict, List, Optional, Tuple
+
+from langdetect import DetectorFactory, detect
 from textblob import TextBlob
-from langdetect import detect, DetectorFactory
 
 try:
     from googletrans import Translator
@@ -21,10 +22,12 @@ except (ImportError, ModuleNotFoundError):
             return Translation()
 
 
+import logging
+
 import numpy as np
 from django.core.cache import cache
-from apps.issue_quality.models import IssueQualityCheck, DuplicateIssue, WontfixPattern
-import logging
+
+from apps.issue_quality.models import DuplicateIssue, IssueQualityCheck, WontfixPattern
 
 logger = logging.getLogger(__name__)
 

@@ -3,15 +3,16 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
-from apps.monitoring.models import TaskRun
+
 from apps.monitoring.celery_monitor import (
     get_celery_stats,
     get_task_type_stats,
-    on_task_prerun,
-    on_task_postrun,
     on_task_failure,
+    on_task_postrun,
+    on_task_prerun,
     on_task_retry,
 )
+from apps.monitoring.models import TaskRun
 
 User = get_user_model()
 

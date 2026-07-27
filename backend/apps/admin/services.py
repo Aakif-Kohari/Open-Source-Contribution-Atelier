@@ -1,9 +1,11 @@
-from django.db.models import Count, Avg, Q
-from django.utils import timezone
 from datetime import timedelta
-from apps.issues.models import Issue
-from apps.dashboard.models import PullRequest
+
 from django.contrib.auth import get_user_model
+from django.db.models import Avg, Count, Q
+from django.utils import timezone
+
+from apps.dashboard.models import PullRequest
+from apps.issues.models import Issue
 
 User = get_user_model()
 

@@ -2,7 +2,7 @@ name: Auto-comment on Issue Assignment
 
 on:
   issues:
-    types: [assigned, opened]
+    types: [assigned]
 
 permissions:
   issues: write
@@ -16,13 +16,30 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const assignees = context.payload.issue.assignees || [];
+            const issue = context.payload.issue;
+            const assignees = issue.assignees || [];
             if (assignees.length === 0) return;
+            
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
             const mentions = assignees.map(a => `@${a.login}`).join(', ');
-            const body = `Assigned to ${mentions} — acknowledged.`;
+
+            const commentBody = [
+              `### 🚀 Assigned to ${mentions}!`,
+              ``,
+              `Please adhere strictly to our **Contribution Rules**:`,
+              `1. ⏰ **48-Hour SLA**: Open a Draft PR within **48 hours**, or the issue will be automatically unassigned.`,
+              `2. 🔗 **Link Issue**: PR description MUST include \`Fixes #${issue.number}\` for points to sync on SSoC / GSSoC / ECSoC leaderboards.`,
+              `3. 🧪 **Pre-Push Checks**: Run \`npm run build\` (frontend) & \`pytest\` (backend) locally before requesting review.`,
+              `4. 🏷️ **Labels**: Do NOT edit or remove program or difficulty labels (\`SSoC26\`, \`ECSoC26\`, \`gssoc:approved\`, \`easy\`, \`Medium\`, \`hard\`).`,
+              ``,
+              `> 🛠️ **Tools**: Run \`python3 verify_readiness.py\` locally | [Contributor Sandbox](https://open-source-contribution-atelier.vercel.app/contributor-sandbox) | [CONTRIBUTING.md](https://github.com/${owner}/${repo}/blob/main/CONTRIBUTING.md)`
+            ].join('\n');
+
             await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.name,
-              body: body
+              issue_number: issue.number,
+              owner: owner,
+              repo: repo,
+              body: commentBody
             });
+

@@ -1,6 +1,8 @@
 import logging
 
 import numpy as np
+from datetime import timedelta
+from django.utils import timezone
 from celery import shared_task
 
 from .ml_engine import predictor
@@ -50,9 +52,11 @@ def monitor_pr_review_delays():
 
         # Trigger automated delay alert for HIGH or CRITICAL risk (with deduplication)
         if res["risk_level"] in ["HIGH", "CRITICAL"]:
+            time_threshold = timezone.now() - timedelta(hours=48)
             existing_alert = DelayAlert.objects.filter(
                 prediction__pr=pr,
                 prediction__risk_level__in=["HIGH", "CRITICAL"],
+                created_at__gte=time_threshold
             ).exists()
 
             if not existing_alert:

@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
-from django.db.models import Avg, Count, Q
+from django.db.models import Avg, Count, Q, F
 from django.utils import timezone
 
 from apps.dashboard.models import PullRequest
@@ -28,10 +28,10 @@ class ProductivityService:
             issues_closed = issues.filter(closed_at__isnull=False)
 
             # Average review time
-            avg_review_time = prs_closed.aggregate(avg=Avg("closed_at" - "created_at"))[
-                "avg"
-            ]
-
+            avg_review_time = prs_closed.aggregate(
+                avg=Avg(F('closed_at') - F('created_at'))
+            )['avg']
+            
             # Stalled PRs
             stalled = prs.filter(updated_at__lte=timezone.now() - timedelta(days=7))
 

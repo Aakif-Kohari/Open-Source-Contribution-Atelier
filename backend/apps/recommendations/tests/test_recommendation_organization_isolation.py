@@ -18,8 +18,12 @@ class RecommendationOrganizationIsolationTests(TestCase):
         self.org_a = Organization.objects.create(name="Org A")
         self.org_b = Organization.objects.create(name="Org B")
 
-        self.content_org_a = ContentOrganization.objects.create(name="Org A", slug="org-a")
-        self.content_org_b = ContentOrganization.objects.create(name="Org B", slug="org-b")
+        self.content_org_a = ContentOrganization.objects.create(
+            name="Org A", slug="org-a"
+        )
+        self.content_org_b = ContentOrganization.objects.create(
+            name="Org B", slug="org-b"
+        )
 
         self.user_a = User.objects.create_user(
             username="user_a", email="usera@orga.com", password="password123"

@@ -61,11 +61,14 @@ def send_web_push_notification(user_id, title, message, url=None):
 try:
     from celery import shared_task
 except ImportError:
+
     def shared_task(*args, **kwargs):
         if len(args) == 1 and callable(args[0]):
             return args[0]
+
         def decorator(func):
             return func
+
         return decorator
 
 
@@ -100,7 +103,9 @@ def send_bulk_email(payload):
         if data.get("xp_earned", 0) > 0:
             subject = f"Wow, {data['xp_earned']} XP this week, {username}! 🚀"
         elif data.get("current_streak", 0) > 0:
-            subject = f"Don't lose your {data['current_streak']}-day streak, {username}! 🔥"
+            subject = (
+                f"Don't lose your {data['current_streak']}-day streak, {username}! 🔥"
+            )
 
         from apps.progress.services.pdf_report_service import PDFReportGenerator
         from django.contrib.auth import get_user_model
@@ -122,7 +127,9 @@ def send_bulk_email(payload):
                     pdf_gen = PDFReportGenerator(user)
                     pdf_attachment = pdf_gen.generate()
                 except Exception as exc:
-                    logger.warning("Could not generate PDF report for %s: %s", user_email, exc)
+                    logger.warning(
+                        "Could not generate PDF report for %s: %s", user_email, exc
+                    )
 
     elif template_id == "badge_earned_email":
         badge_name = data.get("badge_name", "")

@@ -32,6 +32,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.close(code=4002)
             return
 
+        if room_id.startswith("dm_"):
+            parts = room_id.split("_")
+            if len(parts) == 3:
+                try:
+                    u1, u2 = int(parts[1]), int(parts[2])
+                    if self.user.id not in [u1, u2]:
+                        logger.warning("WS Chat rejected: unauthorized DM access")
+                        await self.close(code=4003)
+                        return
+                except ValueError:
+                    await self.close(code=4002)
+                    return
+
         self.user = user
         self.room_id = room_id
         self.group_name = f"chat_{room_id}"
@@ -58,6 +71,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 text_data=json.dumps(
                     {
                         "type": "new_message",
+                        "id": msg["id"],
+                        "parent_id": msg["parent_id"],
                         "username": msg["username"],
                         "user_id": msg["user_id"],
                         "message": msg["content"],
@@ -86,7 +101,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "type": "presence_joined",
                     "username": self.user.username,
                     "user_id": self.user.id,
-                }
+                },
             )
 
     @database_sync_to_async
@@ -94,6 +109,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         qs = Message.objects.filter(room_id=self.room_id).order_by("-created_at")[:50]
         return [
             {
+                "id": m.id,
+                "parent_id": m.parent_id,
                 "username": m.user.username,
                 "user_id": m.user.id,
                 "content": m.content,
@@ -103,8 +120,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         ]
 
     @database_sync_to_async
-    def save_message(self, user, room_id, content):
-        return Message.objects.create(user=user, room_id=room_id, content=content)
+    def save_message(self, user, room_id, content, parent_id=None):
+        return Message.objects.create(
+            user=user, room_id=room_id, content=content, parent_id=parent_id
+        )
 
     async def disconnect(self, close_code):
         if getattr(self, "typing_timeout_task", None):
@@ -119,7 +138,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         "type": "presence_left",
                         "username": self.user.username,
                         "user_id": self.user.id,
-                    }
+                    },
                 )
             # Automatically clear typing state on disconnect
             await self.channel_layer.group_send(
@@ -171,7 +190,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def get_online_users(self):
         key = f"chat_presence_{self.room_id}"
         users = cache.get(key, {})
-        return [{"user_id": int(uid), "username": info["username"]} for uid, info in users.items()]
+        return [
+            {"user_id": int(uid), "username": info["username"]}
+            for uid, info in users.items()
+        ]
 
     async def clear_typing_state(self):
         try:
@@ -244,14 +266,36 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     },
                 )
 
+        elif action == "ping":
+            await self.send(text_data=json.dumps({"type": "pong"}))
+
         elif action == "send_message":
             content = data.get("message", "")
+            parent_id = data.get("parent_id")
             if content:
-                msg = await self.save_message(self.user, self.room_id, content)
+                is_allowed = await self.check_rate_limit(
+                    f"throttle_chat_ws_{self.user.id}", 30, 60
+                )
+                if not is_allowed:
+                    await self.send(
+                        text_data=json.dumps(
+                            {
+                                "type": "error",
+                                "message": "Rate limit exceeded. Please wait before sending more messages.",
+                            }
+                        )
+                    )
+                    return
+
+                msg = await self.save_message(
+                    self.user, self.room_id, content, parent_id
+                )
                 await self.channel_layer.group_send(
                     self.group_name,
                     {
                         "type": "chat_message",
+                        "id": msg.id,
+                        "parent_id": msg.parent_id,
                         "username": self.user.username,
                         "user_id": self.user.id,
                         "message": content,
@@ -293,6 +337,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             text_data=json.dumps(
                 {
                     "type": "new_message",
+                    "id": event.get("id"),
+                    "parent_id": event.get("parent_id"),
                     "username": event["username"],
                     "user_id": event["user_id"],
                     "message": event["message"],
@@ -302,15 +348,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
     async def presence_joined(self, event):
-        await self.send(text_data=json.dumps({
-            "type": "presence_joined",
-            "username": event["username"],
-            "user_id": event["user_id"],
-        }))
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "presence_joined",
+                    "username": event["username"],
+                    "user_id": event["user_id"],
+                }
+            )
+        )
 
     async def presence_left(self, event):
-        await self.send(text_data=json.dumps({
-            "type": "presence_left",
-            "username": event["username"],
-            "user_id": event["user_id"],
-        }))
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "presence_left",
+                    "username": event["username"],
+                    "user_id": event["user_id"],
+                }
+            )
+        )

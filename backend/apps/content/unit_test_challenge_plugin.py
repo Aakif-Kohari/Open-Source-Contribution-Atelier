@@ -18,9 +18,12 @@ first and wire this call accordingly (marked with a clear TODO, not
 silently guessed at).
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
+import traceback
 from typing import Any, Dict, List
 
-import traceback
 from .plugins import LessonPlugin, registry
 
 
@@ -132,7 +135,8 @@ class UnitTestChallengePlugin(LessonPlugin):
         # Rule 1: the test MUST pass against the correct reference implementation.
         try:
             reference_result = _run_in_sandbox(test_code, reference_impl, function_name)
-        except Exception:
+        except Exception as e:
+            logger.warning("Caught exception: %s", e)
             return 0.0
 
         if not reference_result.get("passed"):
@@ -146,7 +150,8 @@ class UnitTestChallengePlugin(LessonPlugin):
         for buggy_impl in buggy_impls:
             try:
                 result = _run_in_sandbox(test_code, buggy_impl, function_name)
-            except Exception:
+            except Exception as e:
+                logger.warning("Caught exception: %s", e)
                 # Treat a harness error on a buggy variant as "not caught"
                 # rather than crashing the whole evaluation.
                 continue

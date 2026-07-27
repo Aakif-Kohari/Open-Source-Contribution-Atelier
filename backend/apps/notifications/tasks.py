@@ -107,8 +107,9 @@ def send_bulk_email(payload):
                 f"Don't lose your {data['current_streak']}-day streak, {username}! 🔥"
             )
 
-        from apps.progress.services.pdf_report_service import PDFReportGenerator
         from django.contrib.auth import get_user_model
+
+        from apps.progress.services.pdf_report_service import PDFReportGenerator
 
         User = get_user_model()
         user_email = recipients[0] if recipients else None
@@ -149,8 +150,8 @@ def send_bulk_email(payload):
                     **data,
                 },
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Caught exception: %s", e)
 
     elif template_id == "comment_posted_email":
         reviewer_name = data.get("reviewer_name", "")
@@ -172,8 +173,8 @@ def send_bulk_email(payload):
                     **data,
                 },
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Caught exception: %s", e)
 
     elif template_id == "notification_digest":
         freq = (
@@ -206,11 +207,13 @@ def send_notification_digests():
     """
     Periodic task to send digest emails to users based on their timezone and preference.
     """
-    from django.utils import timezone
-    from django.template.loader import render_to_string
-    from django.utils.html import strip_tags
     import zoneinfo
-    from .models import NotificationPreference, Notification
+
+    from django.template.loader import render_to_string
+    from django.utils import timezone
+    from django.utils.html import strip_tags
+
+    from .models import Notification, NotificationPreference
 
     prefs = NotificationPreference.objects.exclude(
         digest_frequency="none"
@@ -223,7 +226,8 @@ def send_notification_digests():
         user = pref.user
         try:
             tz = zoneinfo.ZoneInfo(user.user_profile.timezone)
-        except Exception:
+        except Exception as e:
+            logger.warning("Caught exception: %s", e)
             tz = timezone.utc
 
         local_time = timezone.now().astimezone(tz)
@@ -269,7 +273,9 @@ def send_notification_digests():
 
 
 from datetime import timedelta
+
 from django.utils import timezone
+
 from apps.notifications.channels import get_channel_instance, get_registered_channels
 from apps.notifications.models import (
     Notification,
@@ -440,7 +446,8 @@ def dispatch_notification(
             else:
                 try:
                     process_notification_delivery.delay(delivery.id, payload)
-                except Exception:
+                except Exception as e:
+                    logger.warning("Caught exception: %s", e)
                     process_notification_delivery(delivery.id, payload)
                     delivery.refresh_from_db()
 

@@ -1,12 +1,17 @@
-from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.utils import timezone
-from django.contrib.auth import get_user_model
+import logging
+
+logger = logging.getLogger(__name__)
 import datetime
+
 import stripe
 from django.conf import settings
-from .models import SubscriptionPlan, CustomerSubscription, Invoice, Payment
+from django.contrib.auth import get_user_model
+from django.http import HttpResponse
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 from django_q.tasks import async_task
+
+from .models import CustomerSubscription, Invoice, Payment, SubscriptionPlan
 
 User = get_user_model()
 
@@ -42,7 +47,8 @@ def stripe_webhook(request):
                     self.data = DataObj(data.get("data", {}).get("object", {}))
 
             event = MockEvent(event_data)
-        except Exception:
+        except Exception as e:
+            logger.warning("Caught exception: %s", e)
             return HttpResponse(status=400)
     else:
         try:
@@ -89,8 +95,8 @@ def stripe_webhook(request):
                     sub.current_period_end = timezone.make_aware(
                         datetime.datetime.fromtimestamp(stripe_sub.current_period_end)
                     )
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning("Caught exception: %s", e)
             elif is_mock:
                 sub.current_period_end = timezone.now() + timezone.timedelta(days=30)
 

@@ -1,4 +1,5 @@
 import logging
+
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -59,8 +60,8 @@ class PRReviewDelayPredictor:
                     ]
                 )
                 y_data.append(pr.actual_review_delay_hours)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Caught exception: %s", e)
 
         if len(X_data) < 3:
             # Calibrated baseline training set around historical PR bounds
@@ -119,7 +120,8 @@ class PRReviewDelayPredictor:
                     "Successfully re-trained XGBoost PR review delay model on %d historical samples.",
                     len(X_train),
                 )
-            except Exception:
+            except Exception as e:
+                logger.warning("Caught exception: %s", e)
                 if self.model is not None:
                     self.model.fit(X_train, y_train)
                     logger.info(

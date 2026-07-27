@@ -1,13 +1,15 @@
+import logging
+
+logger = logging.getLogger(__name__)
 from datetime import timedelta
 
 from django.db.models import Q
 from django.utils import timezone
 
+from apps.cache.services.cache_manager import CacheManager
 from apps.challenges.models import Challenge
 from apps.content.models import Lesson
 from apps.progress.models import ExerciseAttempt, LessonProgress, QuizAttempt
-
-from apps.cache.services.cache_manager import CacheManager
 
 from .models import Recommendation
 
@@ -31,14 +33,14 @@ class RecommendationEngine:
             )
             if profile and profile.organization_id:
                 return profile.organization
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Caught exception: %s", e)
         try:
             org = getattr(self.user, "organization", None)
             if org is not None:
                 return org
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Caught exception: %s", e)
         return None
 
     def generate_recommendations(self):

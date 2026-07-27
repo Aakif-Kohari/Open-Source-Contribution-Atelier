@@ -1,8 +1,12 @@
+import logging
+
+logger = logging.getLogger(__name__)
 import numpy as np
-from rest_framework import status, views
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.db.models import Avg, Count
+from rest_framework import status, views
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+
 from .models import (
     ReviewerAvailability,
     PullRequestMetric,
@@ -16,6 +20,18 @@ from .tasks import (
     retrain_predictions_model,
 )
 from .github_service import GitHubPRService
+from .ml_engine import predictor
+from .models import (
+    DelayAlert,
+    PullRequestMetric,
+    ReviewDelayPrediction,
+    ReviewerAvailability,
+)
+from .tasks import (
+    monitor_pr_review_delays,
+    retrain_predictions_model,
+    update_reviewer_availability,
+)
 
 
 class PredictDelayAPIView(views.APIView):
@@ -213,13 +229,15 @@ class TriggerMonitoringAPIView(views.APIView):
             async_task("apps.predictions.tasks.update_reviewer_availability")
             queued = True
             msg = "Monitoring tasks dispatched asynchronously via Django-Q."
-        except Exception:
+        except Exception as e:
+            logger.warning("Caught exception: %s", e)
             try:
                 monitor_pr_review_delays.delay()
                 update_reviewer_availability.delay()
                 queued = True
                 msg = "Monitoring tasks dispatched asynchronously via Celery."
-            except Exception:
+            except Exception as e:
+                logger.warning("Caught exception: %s", e)
                 msg = "Async worker service unavailable. Monitoring task could not be queued."
 
         if not queued:
@@ -245,12 +263,14 @@ class TrainModelAPIView(views.APIView):
             async_task("apps.predictions.tasks.retrain_predictions_model")
             queued = True
             msg = "Model retraining task queued asynchronously via Django-Q."
-        except Exception:
+        except Exception as e:
+            logger.warning("Caught exception: %s", e)
             try:
                 retrain_predictions_model.delay()
                 queued = True
                 msg = "Model retraining task queued asynchronously via Celery."
-            except Exception:
+            except Exception as e:
+                logger.warning("Caught exception: %s", e)
                 # Fallback to background thread or execute safely
                 retrain_predictions_model()
                 msg = "Model retraining completed."

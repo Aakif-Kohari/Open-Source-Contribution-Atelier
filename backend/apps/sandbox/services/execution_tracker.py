@@ -37,11 +37,17 @@ class ExecutionTracker:
                     streak.current_streak += 1
                 else:
                     streak.current_streak = 1
-                
+
                 streak.last_activity_date = today
                 if streak.current_streak > streak.longest_streak:
                     streak.longest_streak = streak.current_streak
-                streak.save(update_fields=['current_streak', 'longest_streak', 'last_activity_date'])
+                streak.save(
+                    update_fields=[
+                        "current_streak",
+                        "longest_streak",
+                        "last_activity_date",
+                    ]
+                )
         except Exception:
             pass
 

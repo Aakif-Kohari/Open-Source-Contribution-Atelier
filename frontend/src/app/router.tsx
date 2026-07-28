@@ -323,6 +323,10 @@ const ApiDocsPage = lazy(() =>
   })),
 );
 
+const WebSocketSimulatorPage = lazy(
+  () => import("../pages/docs/WebSocketSimulatorPage"),
+);
+
 const OAuthClientsPage = lazy(() =>
   import("../pages/admin/OAuthClients").then((module) => ({
     default: module.OAuthClients,
@@ -835,6 +839,8 @@ export function AppRouter() {
           />
 
           <Route path="/docs/api" element={<ApiDocsPage />} />
+          <Route path="/docs/env-generator" element={<EnvConfigGeneratorPage />} />
+          <Route path="/docs/websocket-simulator" element={<WebSocketSimulatorPage />} />
           <Route
             path="/notifications/digest"
             element={

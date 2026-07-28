@@ -862,3 +862,10 @@ NOTIFICATION_CHANNELS = {
     "webhook": "apps.notifications.channels.webhook_channel.WebhookChannel",
     "slack": "apps.notifications.channels.slack_channel.SlackChannel",
 }
+
+# ── Test Environment Settings ──────────────────────────────────────────────
+TESTING = ("test" in sys.argv) or any("pytest" in arg for arg in sys.argv)
+if TESTING:
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_EAGER_PROPAGATES = True
+

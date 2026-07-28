@@ -95,6 +95,7 @@ const navGroups = [
       { to: "/docs/websocket-simulator", label: "WS Simulator", icon: Activity },
       { to: "/admin/oauth-clients", label: "OAuth Apps", icon: Key },
       { to: "/admin/celery", label: "Celery Tasks", icon: Cpu },
+      { to: "/admin/audit", label: "Audit Logs", icon: SlidersHorizontal },
     ],
   },
 ];

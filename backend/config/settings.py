@@ -247,7 +247,6 @@ RATE_LIMIT_BACKEND = os.getenv(
 ).lower()
 RATE_LIMIT_REDIS_URL = ENV_REDIS_URL or CHECK_REDIS_URL
 
-
 MIDDLEWARE = [
     "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "apps.core.middleware.request_id.RequestIdMiddleware",

@@ -493,6 +493,7 @@ export function LeaderboardPage() {
                 ),
                 className: "text-right pr-6",
               },
+            ]}
           />
         </DataStateWrapper>
       </motion.div>

@@ -1,8 +1,8 @@
 name: PR Conflict Detection Alert
 
 on:
-  push:
-    branches: [main]
+  schedule:
+    - cron: '0 12 * * *'   # once daily at noon UTC
   pull_request_target:
     types: [synchronize, reopened]
 
@@ -39,10 +39,17 @@ jobs:
                   const commentBody = `⚠️ @${author}, your Pull Request **#${pr.number}** has **merge conflicts** with the \`main\` branch. Please rebase or merge \`main\` locally to resolve conflicts so maintainers can merge it!`;
 
                   const comments = await github.paginate(github.rest.issues.listComments, {owner, repo, issue_number: pr.number});
-                  const alreadyNotified = comments.some(c => c.user.type === 'Bot' && c.body.includes('has merge conflicts'));
+                  const existing = comments.filter(c =>
+                    c.user.type === 'Bot' && c.body.includes('merge conflict')
+                  );
 
-                  if (!alreadyNotified) {
+                  if (existing.length === 0) {
                     await github.rest.issues.createComment({owner, repo, issue_number: pr.number, body: commentBody});
+                  } else {
+                    const last = existing[existing.length - 1];
+                    if (last.body !== commentBody) {
+                      await github.rest.issues.updateComment({owner, repo, comment_id: last.id, body: commentBody});
+                    }
                   }
                 }
               } catch (e) {

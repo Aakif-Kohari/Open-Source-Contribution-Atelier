@@ -330,6 +330,8 @@ const ApiDocsPage = lazy(() =>
 
 const EnvConfigGeneratorPage = lazy(
   () => import("../pages/EnvConfigGeneratorPage"),
+);
+
 const WebSocketSimulatorPage = lazy(
   () => import("../pages/docs/WebSocketSimulatorPage"),
 );

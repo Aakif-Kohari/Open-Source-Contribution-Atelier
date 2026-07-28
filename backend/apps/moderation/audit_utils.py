@@ -1,10 +1,10 @@
 from __future__ import annotations
+
 import logging
 
 logger = logging.getLogger(__name__)
 
 from typing import Optional
-
 
 def safe_parse_date(date_str: Optional[str]):
     if not date_str:

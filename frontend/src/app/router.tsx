@@ -104,7 +104,6 @@ const CeleryDashboardPage = lazy(() =>
   })),
 );
 
-
 const VulnerabilityDashboard = lazy(() =>
   import("../pages/admin/VulnerabilityDashboard").then((module) => ({
     default: module.VulnerabilityDashboard,
@@ -323,6 +322,8 @@ const ApiDocsPage = lazy(() =>
   })),
 );
 
+const EnvConfigGeneratorPage = lazy(
+  () => import("../pages/EnvConfigGeneratorPage"),
 const WebSocketSimulatorPage = lazy(
   () => import("../pages/docs/WebSocketSimulatorPage"),
 );
@@ -741,7 +742,6 @@ export function AppRouter() {
               </ProtectedRoute>
             }
           />
-
 
           <Route
             path="/admin/performance"

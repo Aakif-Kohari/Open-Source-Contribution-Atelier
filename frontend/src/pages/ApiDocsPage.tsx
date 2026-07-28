@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Download, Search, Sliders } from "lucide-react";
 import { Download, Search, Sliders, Activity } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ApiEndpointCard } from "../components/docs/ApiEndpointCard";
@@ -85,6 +86,7 @@ export function ApiDocsPage() {
             to="/docs/env-generator"
             className="inline-flex items-center gap-2 rounded-md bg-accent text-white px-3 py-2 text-sm font-bold shadow-card-sm hover:bg-accent/90 transition-all"
           >
+            <Sliders size={16} /> Config Generator Wizard
             <Sliders size={16} /> Config Generator
           </Link>
           <Link

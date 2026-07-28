@@ -27,16 +27,13 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
 stripe.api_key = STRIPE_SECRET_KEY
 
-
 def load_dotenv(dotenv_path: Path) -> None:
     if not dotenv_path.exists():
         return
 
-
 from dotenv import load_dotenv
 
 load_dotenv(BASE_DIR / ".env")
-
 
 SECRET_KEY = os.getenv(
     "SECRET_KEY", "django-insecure-dev-key-not-for-production-use-32bytes!!"
@@ -508,7 +505,6 @@ REST_FRAMEWORK = {
 # ============================================================
 # ✅ UPDATED: SimpleJWT Configuration with Dynamic Salt
 # ============================================================
-
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(
         minutes=int(os.getenv("ACCESS_TOKEN_LIFETIME_MINUTES", "30"))
@@ -577,7 +573,6 @@ SOCIALACCOUNT_EMAIL_VERIFICATION = "optional"
 SOCIALACCOUNT_ADAPTER = "apps.accounts.allauth_adapter.CustomSocialAccountAdapter"
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_UNIQUE_EMAIL = True
-
 
 # ──────────────────────────────────────────
 # Django Channels + Notifications
@@ -836,7 +831,6 @@ if SENTRY_DSN:
         traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "1.0")),
         send_default_pii=False,
     )
-
 
 # ──────────────────────────────────────────
 # Audit Trail Configuration

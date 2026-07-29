@@ -55,6 +55,177 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/audit/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description GET /api/admin/audit/ — query, filter, paginate, and export domain audit events.
+         *     Restricted to admin/staff users.
+         */
+        get: operations["api_admin_audit_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/audit/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description GET /api/admin/audit/<int:pk>/ — retrieve detail view for a specific audit event.
+         *     Restricted to admin/staff users.
+         */
+        get: operations["api_admin_audit_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/backups/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description API endpoint that allows admins to view backup verification history and trigger a manual restore verification. */
+        get: operations["api_admin_backups_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/backups/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description API endpoint that allows admins to view backup verification history and trigger a manual restore verification. */
+        get: operations["api_admin_backups_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/backups/verify_now/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Triggers a manual backup verification in the background. */
+        post: operations["api_admin_backups_verify_now_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/celery-stats/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description API endpoint that exposes Celery metrics: queue depth, worker count, active & reserved tasks.
+         *     Protected behind staff/admin permission check.
+         */
+        get: operations["api_admin_celery_stats_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/celery-task-runs/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description API endpoint to list and search recent Celery TaskRuns.
+         *     Protected behind staff/admin permission check.
+         */
+        get: operations["api_admin_celery_task_runs_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/celery-task-runs/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description API endpoint to list and search recent Celery TaskRuns.
+         *     Protected behind staff/admin permission check.
+         */
+        get: operations["api_admin_celery_task_runs_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/celery-task-stats/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description API endpoint that exposes per-task-type statistics, top 5 failing tasks, and 24h sparkline data.
+         *     Protected behind staff/admin permission check.
+         */
+        get: operations["api_admin_celery_task_stats_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/advanced-search/search-analytics/": {
         parameters: {
             query?: never;
@@ -161,6 +332,46 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["api_ai_tutor_ask_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/audit/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description GET /api/admin/audit/ — query, filter, paginate, and export domain audit events.
+         *     Restricted to admin/staff users.
+         */
+        get: operations["api_audit_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/audit/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description GET /api/admin/audit/<int:pk>/ — retrieve detail view for a specific audit event.
+         *     Restricted to admin/staff users.
+         */
+        get: operations["api_audit_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -616,6 +827,17 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * @description Mixin that scopes a DRF viewset's queryset to the current tenant.
+         *
+         *     Add it BEFORE ``viewsets.ModelViewSet`` in the MRO::
+         *
+         *         class LessonViewSet(OrganizationScopedQuerySetMixin,
+         *                             viewsets.ModelViewSet):
+         *             queryset = Lesson.objects.all()
+         *             serializer_class = LessonSerializer
+         *             permission_classes = [IsAuthenticated]
+         */
         get: operations["api_auth_users_list"];
         put?: never;
         post?: never;
@@ -2875,6 +3097,137 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["api_moderation_reports_action_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/monitoring/backups/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description API endpoint that allows admins to view backup verification history and trigger a manual restore verification. */
+        get: operations["api_monitoring_backups_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/monitoring/backups/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description API endpoint that allows admins to view backup verification history and trigger a manual restore verification. */
+        get: operations["api_monitoring_backups_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/monitoring/backups/verify_now/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Triggers a manual backup verification in the background. */
+        post: operations["api_monitoring_backups_verify_now_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/monitoring/celery-stats/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description API endpoint that exposes Celery metrics: queue depth, worker count, active & reserved tasks.
+         *     Protected behind staff/admin permission check.
+         */
+        get: operations["api_monitoring_celery_stats_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/monitoring/celery-task-runs/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description API endpoint to list and search recent Celery TaskRuns.
+         *     Protected behind staff/admin permission check.
+         */
+        get: operations["api_monitoring_celery_task_runs_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/monitoring/celery-task-runs/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description API endpoint to list and search recent Celery TaskRuns.
+         *     Protected behind staff/admin permission check.
+         */
+        get: operations["api_monitoring_celery_task_runs_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/monitoring/celery-task-stats/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description API endpoint that exposes per-task-type statistics, top 5 failing tasks, and 24h sparkline data.
+         *     Protected behind staff/admin permission check.
+         */
+        get: operations["api_monitoring_celery_task_stats_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -5282,6 +5635,38 @@ export interface paths {
         patch: operations["api_security_autofix_prs_partial_update"];
         trace?: never;
     };
+    "/api/security/project-dependencies/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["api_security_project_dependencies_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/security/project-dependencies/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["api_security_project_dependencies_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/security/summary/": {
         parameters: {
             query?: never;
@@ -5804,6 +6189,13 @@ export interface components {
             readonly options: components["schemas"]["ADROption"][];
         };
         /**
+         * @description * `created` - Created
+         *     * `updated` - Updated
+         *     * `deleted` - Deleted
+         * @enum {string}
+         */
+        ActionEnum: "created" | "updated" | "deleted";
+        /**
          * @description * `NONE` - None
          *     * `HIDDEN` - Hidden
          *     * `REMOVED` - Removed
@@ -5817,6 +6209,24 @@ export interface components {
          * @enum {string}
          */
         AssignmentTypeEnum: "manual" | "auto" | "suggested";
+        AuditEvent: {
+            readonly id: number;
+            /** @description User who triggered the change. */
+            readonly actor: number | null;
+            readonly actor_username: string;
+            readonly action: components["schemas"]["ActionEnum"];
+            readonly resource_type: string;
+            readonly resource_id: string;
+            readonly before: unknown;
+            readonly after: unknown;
+            readonly correlation_id: string;
+            readonly ip_address: string | null;
+            readonly user_agent: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            readonly extra: unknown;
+            readonly summary: string;
+        };
         AuditLog: {
             readonly id: number;
             actor?: number | null;
@@ -5852,6 +6262,23 @@ export interface components {
             /** Format: uri */
             avatar: string;
         };
+        BackupVerification: {
+            readonly id: number;
+            /** Format: date-time */
+            backup_timestamp: string;
+            /** Format: date-time */
+            verification_timestamp?: string;
+            /** Format: int64 */
+            size_bytes?: number | null;
+            status: components["schemas"]["BackupVerificationStatusEnum"];
+            logs?: string;
+        };
+        /**
+         * @description * `success` - Success
+         *     * `failed` - Failed
+         * @enum {string}
+         */
+        BackupVerificationStatusEnum: "success" | "failed";
         Badge: {
             readonly id: number;
             name: string;
@@ -7373,6 +7800,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["A11yIssue"][];
+        };
+        PaginatedAuditEventList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["AuditEvent"][];
         };
         PaginatedLeaderboardList: {
             /** @example 123 */
@@ -8909,6 +9351,22 @@ export interface components {
             /** Format: date-time */
             readonly updated_at: string;
         };
+        ProjectDependency: {
+            readonly id: number;
+            package_name: string;
+            /** @default python */
+            ecosystem: string;
+            current_version?: string;
+            latest_version?: string;
+            /** Format: int64 */
+            days_vulnerable?: number;
+            /** Format: double */
+            decay_rate?: number;
+            /** Format: int64 */
+            security_score?: number;
+            /** Format: date-time */
+            readonly last_checked_at: string;
+        };
         ProjectFile: {
             /** Format: uuid */
             readonly id: string;
@@ -9246,6 +9704,34 @@ export interface components {
          * @enum {string}
          */
         TagTypeEnum: "skill" | "technology" | "domain" | "difficulty" | "area" | "custom";
+        TaskRun: {
+            readonly id: number;
+            task_id: string;
+            task_name: string;
+            status?: components["schemas"]["TaskRunStatusEnum"];
+            /** Format: date-time */
+            started_at?: string;
+            /** Format: date-time */
+            finished_at?: string | null;
+            /**
+             * Format: double
+             * @description Duration in seconds
+             */
+            duration?: number | null;
+            error_message?: string;
+            args_summary?: string;
+            /** Format: int64 */
+            retry_count?: number;
+        };
+        /**
+         * @description * `PENDING` - Pending
+         *     * `STARTED` - Started
+         *     * `SUCCESS` - Success
+         *     * `FAILURE` - Failure
+         *     * `RETRY` - Retry
+         * @enum {string}
+         */
+        TaskRunStatusEnum: "PENDING" | "STARTED" | "SUCCESS" | "FAILURE" | "RETRY";
         TokenRefresh: {
             readonly access: string;
             refresh: string;
@@ -9515,6 +10001,194 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["A11yIssue"];
                 };
+            };
+        };
+    };
+    api_admin_audit_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAuditEventList"];
+                };
+            };
+        };
+    };
+    api_admin_audit_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditEvent"];
+                };
+            };
+        };
+    };
+    api_admin_backups_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupVerification"][];
+                };
+            };
+        };
+    };
+    api_admin_backups_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this backup verification. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupVerification"];
+                };
+            };
+        };
+    };
+    api_admin_backups_verify_now_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackupVerification"];
+                "application/x-www-form-urlencoded": components["schemas"]["BackupVerification"];
+                "multipart/form-data": components["schemas"]["BackupVerification"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupVerification"];
+                };
+            };
+        };
+    };
+    api_admin_celery_stats_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    api_admin_celery_task_runs_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskRun"][];
+                };
+            };
+        };
+    };
+    api_admin_celery_task_runs_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Task Run. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskRun"];
+                };
+            };
+        };
+    };
+    api_admin_celery_task_stats_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -9962,6 +10636,51 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    api_audit_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAuditEventList"];
+                };
+            };
+        };
+    };
+    api_audit_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditEvent"];
+                };
             };
         };
     };
@@ -17082,6 +17801,149 @@ export interface operations {
             };
         };
     };
+    api_monitoring_backups_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupVerification"][];
+                };
+            };
+        };
+    };
+    api_monitoring_backups_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this backup verification. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupVerification"];
+                };
+            };
+        };
+    };
+    api_monitoring_backups_verify_now_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackupVerification"];
+                "application/x-www-form-urlencoded": components["schemas"]["BackupVerification"];
+                "multipart/form-data": components["schemas"]["BackupVerification"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupVerification"];
+                };
+            };
+        };
+    };
+    api_monitoring_celery_stats_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    api_monitoring_celery_task_runs_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskRun"][];
+                };
+            };
+        };
+    };
+    api_monitoring_celery_task_runs_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Task Run. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskRun"];
+                };
+            };
+        };
+    };
+    api_monitoring_celery_task_stats_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     api_notes_list: {
         parameters: {
             query?: {
@@ -22433,6 +23295,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AutoFixPR"];
+                };
+            };
+        };
+    };
+    api_security_project_dependencies_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectDependency"][];
+                };
+            };
+        };
+    };
+    api_security_project_dependencies_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this project dependency. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectDependency"];
                 };
             };
         };

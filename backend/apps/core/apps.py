@@ -30,6 +30,11 @@ class CoreConfig(AppConfig):
         except ImportError:
             pass
 
+        from django.db.models.signals import post_migrate
+
+        post_migrate.connect(self.setup_initial_data, sender=self)
+
+    def setup_initial_data(self, sender, **kwargs):
         try:
             from django_q.models import Schedule
 

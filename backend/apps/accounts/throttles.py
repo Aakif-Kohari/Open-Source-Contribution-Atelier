@@ -100,6 +100,7 @@ class RedisLuaRateLimiter:
 
         return allowed, current_count, ttl_remaining
 
+
 from apps.core.throttling import SlidingWindowAnonThrottle
 
 
@@ -119,19 +120,18 @@ def _get_real_ip(request) -> str:
     return request.META.get("REMOTE_ADDR", "")
 
 
-
 class BaseDistributedThrottle(SimpleRateThrottle):
     """
     Base throttle that uses Redis Lua scripting when settings.RATE_LIMIT_BACKEND == "redis".
     Falls back to local cache implementation if "local" or when Redis is down.
     """
 
-class _ProxyAwareThrottle(SlidingWindowAnonThrottle): # type: ignore
+
+class _ProxyAwareThrottle(SlidingWindowAnonThrottle):  # type: ignore
     """Base class that uses the proxy-aware IP resolver for cache keys."""
 
-
-    num_requests: int # type: ignore
-    duration: int # type: ignore
+    num_requests: int  # type: ignore
+    duration: int  # type: ignore
 
     def allow_request(self, request, view):
         if self.rate is None:
@@ -286,3 +286,7 @@ class MagicLinkVerifyThrottle(_ProxyAwareThrottle):
 
 class OAuthThrottle(_ProxyAwareThrottle):
     scope = "auth_oauth"
+
+
+class GitHubOAuthCallbackThrottle(_ProxyAwareThrottle):
+    scope = "auth_github_callback"
